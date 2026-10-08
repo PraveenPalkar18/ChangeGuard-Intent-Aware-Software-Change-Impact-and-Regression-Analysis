@@ -76,7 +76,7 @@
      - *Solution*: Created `pytest.ini` with `pythonpath = .` and added `backend/__init__.py`.
 
 - **Current status**:
-  Milestone 1 complete. 12/12 automated tests passing cleanly. Live GitHub PR retrieval verified via both CLI and API schemas.
+  Milestone 1 complete. GitHub Personal Access Token configured in git-ignored `.env` file and verified (API rate limit verified at 5,000 requests/hour). 12/12 automated tests passing cleanly. Live GitHub PR retrieval verified via both CLI and API schemas.
 
 - **Next step**:
   Awaiting user confirmation to proceed to Milestone 2: Diff and Hunk Processing (Unified diff parsing, extraction of individual hunks with old/new line numbers, added/deleted line tracking, and associated code entity mapping).

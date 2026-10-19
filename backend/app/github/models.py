@@ -49,6 +49,8 @@ class PullRequestDetails(BaseModel):
     merged_at: Optional[str] = None
     base_branch: str
     head_branch: str
+    base_sha: Optional[str] = None
+    head_sha: Optional[str] = None
     commits_count: int
     changed_files_count: int
     total_additions: int

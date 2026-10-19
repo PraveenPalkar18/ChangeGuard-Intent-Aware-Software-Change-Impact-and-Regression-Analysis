@@ -23,11 +23,17 @@ class FallbackModelProvider(AIModelProvider):
 
     @property
     def provider_name(self) -> str:
-        return f"{self._primary.provider_name} (fallback: {self._fallback.provider_name})"
+        if self._active_provider == self._fallback:
+            return f"{self._fallback.provider_name} [fell back from {self._primary.provider_name}]"
+        return self._primary.provider_name
 
     @property
     def model_name(self) -> str:
-        return self._primary.model_name
+        return self._active_provider.model_name
+
+    @property
+    def is_fallback_active(self) -> bool:
+        return self._active_provider == self._fallback
 
     def compute_similarity(self, text_a: str, text_b: str) -> float:
         try:
@@ -43,6 +49,8 @@ class FallbackModelProvider(AIModelProvider):
     def get_model_info(self) -> Dict[str, Any]:
         return {
             "provider": self.provider_name,
+            "is_fallback_active": self.is_fallback_active,
+            "active_provider": self._active_provider.provider_name,
             "primary": self._primary.get_model_info(),
             "fallback": self._fallback.get_model_info(),
         }

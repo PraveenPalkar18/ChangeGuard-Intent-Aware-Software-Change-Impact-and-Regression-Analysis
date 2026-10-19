@@ -104,3 +104,26 @@ class GitHubClient:
             }
         except Exception as exc:
             return {"error": str(exc)}
+
+    def get_file_content(self, owner: str, repo: str, file_path: str, ref: Optional[str] = None) -> Optional[str]:
+        """Fetch the decoded source content of a file from a repository at a specific commit or ref.
+
+        Args:
+            owner: GitHub repository owner.
+            repo: GitHub repository name.
+            file_path: Relative path to file in repo.
+            ref: Git commit SHA or branch name.
+
+        Returns:
+            Decoded UTF-8 source string if file exists, or None if file not found / binary / deleted.
+        """
+        full_repo_name = f"{owner}/{repo}"
+        try:
+            repository = self._client.get_repo(full_repo_name)
+            content_file = repository.get_contents(file_path, ref=ref) if ref else repository.get_contents(file_path)
+            if content_file and hasattr(content_file, "decoded_content") and content_file.decoded_content:
+                return content_file.decoded_content.decode("utf-8", errors="replace")
+            return None
+        except (UnknownObjectException, Exception):
+            # Non-existent file at this ref (e.g. newly added file, deleted file) or network issue
+            return None

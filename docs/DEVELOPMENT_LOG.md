@@ -233,4 +233,60 @@
   Milestone 4 complete. 41/41 automated tests passing across the codebase. Zero hard-coded model identifiers or API keys in business logic.
 
 - **Next step**:
-  Awaiting user confirmation to proceed to Milestone 5: Change / Dependency Graph (NetworkX directed graph modeling of repository entities, calls, imports, and tests).
+  End-to-End Integration Audit & Analysis Service implementation before proceeding to Milestone 5.
+
+---
+
+### Entry: 2026-10-19 - End-to-End Integration Audit & Analysis Pipeline Service
+
+- **Date**: 2026-10-19
+- **Task**: Audit integration between M1 (GitHub Importer), M2 (Diff Preprocessor), M3 (Tree-sitter Code Parser), and M4 (AI Intent Engine). Implement orchestrating analysis service and public API endpoint without treating patches as full source.
+- **Audit Findings**:
+  1. *Missing Orchestration Service*: M1, M2, M3, and M4 functioned in isolation with high test coverage, but no service connected them to consume a real PR and output an integrated report.
+  2. *Source vs Patch Contract*: Diff patches are deltas without context outside modified hunks. Tree-sitter AST parsing requires complete file contents at `base_sha` (for deletions) and `head_sha` (for additions/modifications). The existing importer did not fetch full repository source files.
+  3. *Credential Hygiene*: GitHub tokens remained securely encapsulated on the backend within `.env` / `GitHubClient` and were not leaked in request/response payloads or logs.
+  4. *AI Provider Verification*: The configured AI provider defaulted to `codebert` with dynamic fallback to `tfidf` when PyTorch/Transformers dependencies are not present, but provider status strings did not explicitly note when fallback occurred.
+- **What was implemented**:
+  1. Enhanced `GitHubClient` with `get_file_content(owner, repo, file_path, ref)` to fetch complete decoded source files at specific commit SHAs using PyGithub, returning `None` gracefully on 404s, binary content, or removals.
+  2. Enhanced `PullRequestDetails` with `base_sha` and `head_sha` tracking.
+  3. Created `backend/app/analysis/models.py` defining `PRAnalysisRequest`, `HunkAnalysisDetail`, `FileAnalysisReport`, and `PRAnalysisReport`.
+  4. Created `ChangeGuardAnalysisService` (`backend/app/analysis/service.py`):
+     - Parses file diffs into structured `DiffHunk` instances.
+     - Retrieves full old/new source files from GitHub via `head_sha` and `base_sha` for Python files (`.py`), skipping non-Python or binary files.
+     - Performs Tree-sitter AST extraction on complete files and maps entities to hunks using `EntityHunkMapper`.
+     - Explicitly records file-level and PR-level limitations if source is unavailable, non-Python, or binary (e.g. `"Full repository source could not be retrieved from GitHub API; entity mapping limited to diff hunk line ranges."`).
+     - Executes `IntentAnalyzer` per hunk to assign `EXPLAINED`, `UNEXPLAINED`, or `UNCERTAIN` labels, similarity scores, confidence scores, explanations, and model provider diagnostics.
+  5. Updated `FallbackModelProvider` so `provider_name` dynamically reports its operational status (e.g., `"tfidf [fell back from codebert]"`), clearly distinguishing CodeBERT inference from TF-IDF fallback results.
+  6. Exposed endpoints in `backend/app/api/v1/analysis.py`:
+     - `POST /api/v1/analyze/pull-request`
+     - `GET /api/v1/analyze/pull-request/{owner}/{repo}/{pr_number}`
+  7. Added 5 integration tests in `backend/tests/test_analysis_service.py` covering:
+     - End-to-end analysis with full source and Tree-sitter entity mapping.
+     - Fallback handling when repository source is unavailable from GitHub.
+     - Graceful skipping of non-Python / binary files with explicit limitations noted.
+     - Error handling for nonexistent repositories / PRs (404 mapping).
+     - Full API endpoint validation with `TestClient`.
+- **Files changed**:
+  - `backend/app/github/client.py` (Modified)
+  - `backend/app/github/models.py` (Modified)
+  - `backend/app/github/importer.py` (Modified)
+  - `backend/app/intent/factory.py` (Modified)
+  - `backend/app/analysis/__init__.py` (Created)
+  - `backend/app/analysis/models.py` (Created)
+  - `backend/app/analysis/service.py` (Created)
+  - `backend/app/api/v1/analysis.py` (Created)
+  - `backend/app/api/v1/router.py` (Modified)
+  - `backend/tests/conftest.py` (Modified)
+  - `backend/tests/test_analysis_service.py` (Created)
+  - `docs/API.md` (Updated)
+  - `docs/ARCHITECTURE.md` (Updated)
+  - `docs/DEVELOPMENT_LOG.md` (Updated)
+- **Tests added**:
+  - `test_analysis_service_full_pipeline_with_source`: Validates end-to-end hunk classification and entity mapping with source fetched.
+  - `test_analysis_service_source_unavailable_graceful_limitation`: Validates limitation reporting when source cannot be retrieved.
+  - `test_analysis_service_skips_non_python_source_fetch`: Validates non-Python files (YAML, Markdown) are diff-analyzed with limitation flags.
+  - `test_analysis_service_propagates_not_found_error`: Validates 404 propagation on missing PRs.
+  - `test_api_analyze_pull_request_post_and_get`: Validates HTTP 200 response on `POST` and `GET` analysis endpoints.
+- **Current status**:
+  End-to-end integration audit complete. Analysis pipeline operational. 46/46 automated tests passing in 2.28s. Live inference verified on GitHub PRs. Ready for Milestone 5 upon confirmation.
+

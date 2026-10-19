@@ -61,8 +61,10 @@ def mock_github_objects():
     # Mock branch refs
     mock_base = MagicMock()
     mock_base.ref = "main"
+    mock_base.sha = "base_sha_12345"
     mock_head = MagicMock()
     mock_head.ref = "bugfix/calc-repair"
+    mock_head.sha = "head_sha_67890"
 
     # Mock PR
     mock_pr = MagicMock()

@@ -61,7 +61,8 @@ ChangeGuard/
 │   │   ├── api/
 │   │   │   └── v1/
 │   │   │       ├── router.py       # API v1 central router
-│   │   │       └── github.py       # GitHub endpoints (/pull-request, /rate-limit)
+│   │   │       ├── github.py       # GitHub endpoints (/pull-request, /rate-limit)
+│   │   │       └── analysis.py     # PR Analysis endpoint (/analyze/pull-request)
 │   │   ├── core/
 │   │   │   ├── config.py           # Pydantic Settings & environment variables
 │   │   │   └── exceptions.py       # Standardized domain exception hierarchy
@@ -72,6 +73,7 @@ ChangeGuard/
 │   │   ├── preprocessing/          # Diff & hunk parser (DiffHunk, DiffLine, parse_patch)
 │   │   ├── repository/             # AST / Tree-sitter parsers (TreeSitterPythonParser, EntityHunkMapper)
 │   │   ├── intent/                 # AI Intent Engine (AIModelProvider, IntentAnalyzer, TF-IDF, CodeBERT)
+│   │   ├── analysis/               # Orchestration pipeline (ChangeGuardAnalysisService, models)
 │   │   ├── graph/                  # [Milestone 5] NetworkX change graph
 │   │   ├── impact/                 # [Milestone 6] Impact analysis & propagation
 │   │   ├── testing/                # [Milestone 7] Regression test recommender
@@ -85,7 +87,8 @@ ChangeGuard/
 │       ├── test_diff_parser.py     # Diff hunk extraction and line mapping tests
 │       ├── test_tree_sitter_parser.py # Tree-sitter AST parsing tests
 │       ├── test_entity_mapper.py   # Entity-hunk association tests
-│       └── test_intent_analyzer.py # AI Intent engine and fallback tests
+│       ├── test_intent_analyzer.py # AI Intent engine and fallback tests
+│       └── test_analysis_service.py # End-to-end integration pipeline tests
 ├── docs/                           # Living project documentation
 ├── scripts/
 │   └── run_importer.py             # CLI runner for quick PR inspection

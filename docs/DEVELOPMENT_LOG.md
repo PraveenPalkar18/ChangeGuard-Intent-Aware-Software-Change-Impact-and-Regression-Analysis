@@ -155,4 +155,82 @@
   Milestone 3 complete. All 28 automated tests passing (12 M1 tests + 16 M2/M3 tests). Clean separation maintained between GitHub API, Tree-sitter parsing, and future AI models.
 
 - **Next step**:
-  Awaiting user confirmation to proceed to Milestone 4: Modular AI Intent Analysis Engine (abstraction, model provider, baseline lexical model, code embeddings, hunk classification as EXPLAINED / UNEXPLAINED / UNCERTAIN).
+  Milestone 4: Modular AI Intent Analysis Engine.
+
+---
+
+### Entry: 2026-10-12 - Milestone 4: Modular AI Intent Engine & Pluggable Providers
+
+- **Date**: 2026-10-12
+- **Task**: Milestone 4 - Modular AI Intent Engine, model provider abstractions, TF-IDF baseline, CodeBERT integration, and hunk classification.
+- **What was implemented**:
+  1. Built modular AI interfaces (`backend/app/intent/`):
+     - `provider_interface.py`: Abstract `AIModelProvider` with `compute_similarity()` and `get_model_info()`.
+     - `analyzer_interface.py`: Abstract `BaseIntentAnalyzer` defining `analyze_hunk()` and `analyze_pull_request()`.
+     - `models.py`: Pydantic data schemas: `PRContext`, `HunkContext`, `HunkIntentResult`, `PRIntentReport`, and `IntentClassification` enum (`EXPLAINED`, `UNEXPLAINED`, `UNCERTAIN`).
+  2. Implemented AI model providers (`backend/app/intent/providers/`):
+     - `MockAIProvider`: Deterministic word-level Jaccard overlap provider for offline test environments.
+     - `TFIDFSimilarityProvider`: Unigram TF-IDF cosine similarity provider with compound identifier sub-token expansion (camelCase and snake_case) and zero-dependency native fallback.
+     - `CodeBERTSimilarityProvider`: Contextual transformer embedding provider using `microsoft/codebert-base` with mean pooling, 512-token truncation, and explicit dependency checks (`ModelNotAvailableException`).
+  3. Built model factory & fallback orchestration (`backend/app/intent/factory.py`):
+     - `create_model_provider()`: Reads configuration from environment (`AI_PROVIDER`, `AI_MODEL`) without hardcoding model names in business logic.
+     - `FallbackModelProvider`: Transparently catches primary provider failures (e.g. GPU out-of-memory or missing weights) and reroutes inference to a secondary provider (e.g. `tfidf`), logging warnings and never fabricating fake results.
+  4. Implemented `IntentAnalyzer` (`backend/app/intent/intent_analyzer.py`):
+     - Classifies hunks into `EXPLAINED`, `UNEXPLAINED`, or `UNCERTAIN`.
+     - Heuristic safeguards: direct entity mention matching, test suite supporting artifact heuristics, and explicit `UNCERTAIN` classification when PR descriptions are absent or when semantic alignment is partial/ambiguous.
+     - Produces explainable reasons, supporting evidence list, and explicit decision limitations.
+     - Aggregates full-PR statistics into `PRIntentReport`.
+  5. Created comprehensive documentation:
+     - `docs/AI_MODELS.md`: Specifications for baseline and transformer models, input/output contracts, thresholds, and limitations.
+     - `docs/MODEL_SWITCHING.md`: Step-by-step developer instructions for swapping models or plugging new providers.
+     - Updated `docs/ARCHITECTURE.md`.
+  6. Added 13 new unit tests in `backend/tests/test_intent_analyzer.py` (41 tests passing total across the project).
+
+- **Files changed**:
+  - `backend/requirements.txt` (Added `scikit-learn>=1.4.0` and `numpy>=1.26.0`)
+  - `backend/app/intent/__init__.py` (Created)
+  - `backend/app/intent/models.py` (Created)
+  - `backend/app/intent/provider_interface.py` (Created)
+  - `backend/app/intent/analyzer_interface.py` (Created)
+  - `backend/app/intent/providers/__init__.py` (Created)
+  - `backend/app/intent/providers/mock_provider.py` (Created)
+  - `backend/app/intent/providers/tfidf_provider.py` (Created)
+  - `backend/app/intent/providers/codebert_provider.py` (Created)
+  - `backend/app/intent/factory.py` (Created)
+  - `backend/app/intent/intent_analyzer.py` (Created)
+  - `backend/tests/test_intent_analyzer.py` (Created)
+  - `docs/AI_MODELS.md` (Created)
+  - `docs/MODEL_SWITCHING.md` (Created)
+  - `docs/ARCHITECTURE.md` (Updated)
+  - `docs/DEVELOPMENT_LOG.md` (Updated)
+
+- **Dependencies added**:
+  - `scikit-learn>=1.4.0`: TF-IDF vectorization and cosine similarity.
+  - `numpy>=1.26.0`: Numerical array manipulation.
+
+- **Tests added**:
+  - `test_mock_provider_deterministic`: Deterministic Jaccard overlap check.
+  - `test_tfidf_provider_similarity`: TF-IDF cosine similarity on related vs orthogonal text.
+  - `test_tfidf_provider_empty_inputs`: Graceful zero handling for empty text.
+  - `test_codebert_provider_fallback_when_unavailable`: Diagnostic metadata check and dependency validation.
+  - `test_fallback_wrapper_switching`: Dynamic provider switching upon primary failure.
+  - `test_factory_creation`: Configuration-driven provider instantiation.
+  - `test_analyze_hunk_explained_by_high_similarity`: EXPLAINED classification on semantic alignment.
+  - `test_analyze_hunk_explained_by_direct_entity_mention`: EXPLAINED classification on direct symbol reference.
+  - `test_analyze_hunk_unexplained_orthogonal_change`: UNEXPLAINED classification on unrelated change.
+  - `test_analyze_hunk_uncertain_on_empty_intent`: UNCERTAIN classification when PR description is missing.
+  - `test_analyze_hunk_uncertain_on_ambiguous_partial_overlap`: UNCERTAIN classification on intermediate overlap.
+  - `test_analyze_hunk_test_file_heuristic`: Supporting test suite heuristic validation.
+  - `test_analyze_pull_request_aggregate_report`: Aggregation and summary generation across PR hunks.
+
+- **Problems encountered**:
+  1. *Bigram dilution in short code/intent pairs*: TF-IDF with `ngram_range=(1, 2)` produced low similarity scores (~0.07) on short snippet pairs due to excessive non-overlapping bigrams.
+     - *Solution*: Switched to unigram TF-IDF and implemented code identifier sub-token expansion (splitting camelCase and snake_case into sub-words like `calculate` + `discount`).
+  2. *Threshold calibration for natural language vs code*: Raw text similarity between informal English descriptions and Python code rarely exceeds 0.50 even on identical features.
+     - *Solution*: Calibrated thresholds (`explained_threshold=0.20`, `unexplained_threshold=0.05`), complemented by direct symbol mention heuristics.
+
+- **Current status**:
+  Milestone 4 complete. 41/41 automated tests passing across the codebase. Zero hard-coded model identifiers or API keys in business logic.
+
+- **Next step**:
+  Awaiting user confirmation to proceed to Milestone 5: Change / Dependency Graph (NetworkX directed graph modeling of repository entities, calls, imports, and tests).

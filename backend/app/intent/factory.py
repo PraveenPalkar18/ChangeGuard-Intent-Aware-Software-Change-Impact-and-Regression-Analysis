@@ -20,6 +20,16 @@ class FallbackModelProvider(AIModelProvider):
         self._primary = primary
         self._fallback = fallback
         self._active_provider = primary
+        # Eager availability check if primary has an initialization probe
+        if hasattr(self._primary, "_ensure_initialized"):
+            try:
+                self._primary._ensure_initialized()
+            except Exception as exc:
+                logger.info(
+                    f"Primary provider '{self._primary.provider_name}' unavailable ({exc}). "
+                    f"Setting active provider to fallback '{self._fallback.provider_name}'."
+                )
+                self._active_provider = self._fallback
 
     @property
     def provider_name(self) -> str:
@@ -37,14 +47,16 @@ class FallbackModelProvider(AIModelProvider):
 
     def compute_similarity(self, text_a: str, text_b: str) -> float:
         try:
-            return self._primary.compute_similarity(text_a, text_b)
+            return self._active_provider.compute_similarity(text_a, text_b)
         except (ModelNotAvailableException, Exception) as exc:
-            logger.warning(
-                f"Primary provider '{self._primary.provider_name}' failed ({exc}). "
-                f"Switching to fallback '{self._fallback.provider_name}'."
-            )
-            self._active_provider = self._fallback
-            return self._fallback.compute_similarity(text_a, text_b)
+            if self._active_provider != self._fallback:
+                logger.warning(
+                    f"Primary provider '{self._primary.provider_name}' failed ({exc}). "
+                    f"Switching to fallback '{self._fallback.provider_name}'."
+                )
+                self._active_provider = self._fallback
+                return self._fallback.compute_similarity(text_a, text_b)
+            raise
 
     def get_model_info(self) -> Dict[str, Any]:
         return {
@@ -72,13 +84,23 @@ def create_model_provider(
         Configured AIModelProvider instance with fallback protection if specified.
     """
     prov_key = (provider_name or settings.AI_PROVIDER).strip().lower()
-    mod_key = model_name or settings.AI_MODEL
+    if model_name:
+        mod_key = model_name
+    elif provider_name and provider_name.strip().lower() != settings.AI_PROVIDER.strip().lower():
+        mod_key = None
+    else:
+        mod_key = settings.AI_MODEL
 
     # Instantiate primary provider
     primary = _instantiate_single_provider(prov_key, mod_key)
 
-    # If fallback is requested and different from primary, wrap in FallbackModelProvider
-    if fallback_provider_name and fallback_provider_name.strip().lower() != prov_key:
+    # Wrap in FallbackModelProvider only for heavy/optional providers (e.g. codebert)
+    # Never wrap mock or tfidf with a fallback
+    if (
+        fallback_provider_name
+        and fallback_provider_name.strip().lower() != prov_key
+        and prov_key not in ("mock", "tfidf")
+    ):
         fallback = _instantiate_single_provider(fallback_provider_name.strip().lower(), None)
         return FallbackModelProvider(primary=primary, fallback=fallback)
 
@@ -95,3 +117,4 @@ def _instantiate_single_provider(provider_key: str, model_name: Optional[str]) -
     else:
         logger.warning(f"Unknown AI provider '{provider_key}'. Falling back to 'tfidf'.")
         return TFIDFSimilarityProvider(model_name="tfidf-fallback")
+

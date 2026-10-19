@@ -253,3 +253,154 @@ def test_api_analyze_pr_not_found():
         assert "not found" in response.json()["detail"]["error"].lower()
     finally:
         app.dependency_overrides.clear()
+
+
+def test_provider_selection_tfidf_real_inference():
+    """Verify provider_name='tfidf' invokes TFIDFSimilarityProvider and computes real similarity."""
+    from backend.app.intent.factory import create_model_provider
+    from backend.app.intent.providers.tfidf_provider import TFIDFSimilarityProvider
+
+    provider = create_model_provider(provider_name="tfidf")
+    assert isinstance(provider, TFIDFSimilarityProvider)
+    assert provider.provider_name == "tfidf"
+    assert not isinstance(provider, MockAIProvider)
+
+    # Actual inference computation check
+    score = provider.compute_similarity(
+        "def calculate_discount(price, rate): return price * (1 - rate)",
+        "Add discount rate calculation and validation in billing module",
+    )
+    assert isinstance(score, float)
+    assert score > 0.15  # Real cosine similarity with sub-word token expansion
+
+
+def test_provider_selection_mock_attribution():
+    """Verify provider_name='mock' cleanly returns deterministic MockAIProvider without fallback."""
+    from backend.app.intent.factory import create_model_provider
+
+    provider = create_model_provider(provider_name="mock")
+    assert isinstance(provider, MockAIProvider)
+    assert provider.provider_name == "mock"
+    assert provider.model_name == "mock-jaccard"
+
+
+def test_provider_selection_codebert_fallback_attribution():
+    """Verify provider_name='codebert' cleanly reports fallback when torch is unavailable."""
+    from backend.app.intent.factory import create_model_provider, FallbackModelProvider
+
+    provider = create_model_provider(provider_name="codebert")
+    assert isinstance(provider, FallbackModelProvider)
+    assert provider.is_fallback_active
+    assert "fell back from codebert" in provider.provider_name
+
+
+def test_api_provider_override_via_post(mock_pr_details, mock_source_code):
+    """Verify passing provider_name in POST payload routes to requested provider and attributions."""
+    mock_importer = MagicMock(spec=GitHubPRImporter)
+    mock_importer.import_pull_request.return_value = mock_pr_details
+
+    mock_client = MagicMock(spec=GitHubClient)
+    mock_client.get_file_content.return_value = mock_source_code
+
+    service = ChangeGuardAnalysisService(
+        importer=mock_importer,
+        github_client=mock_client,
+    )
+
+    client = TestClient(app)
+    app.dependency_overrides[get_analysis_service] = lambda: service
+    try:
+        # Request tfidf explicitly
+        resp_tfidf = client.post(
+            "/api/v1/analyze/pull-request",
+            json={
+                "owner": "testowner",
+                "repo": "testrepo",
+                "pr_number": 50,
+                "provider_name": "tfidf",
+            },
+        )
+        assert resp_tfidf.status_code == 200
+        data_tfidf = resp_tfidf.json()
+        assert data_tfidf["ai_provider"] == "tfidf"
+        assert data_tfidf["files"][0]["hunks"][0]["provider_used"] == "tfidf"
+
+        # Request mock explicitly
+        resp_mock = client.post(
+            "/api/v1/analyze/pull-request",
+            json={
+                "owner": "testowner",
+                "repo": "testrepo",
+                "pr_number": 50,
+                "provider_name": "mock",
+            },
+        )
+        assert resp_mock.status_code == 200
+        data_mock = resp_mock.json()
+        assert data_mock["ai_provider"] == "mock"
+        assert data_mock["files"][0]["hunks"][0]["provider_used"] == "mock"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_api_provider_override_via_get(mock_pr_details, mock_source_code):
+    """Verify provider query parameter in GET request routes properly."""
+    mock_importer = MagicMock(spec=GitHubPRImporter)
+    mock_importer.import_pull_request.return_value = mock_pr_details
+
+    mock_client = MagicMock(spec=GitHubClient)
+    mock_client.get_file_content.return_value = mock_source_code
+
+    service = ChangeGuardAnalysisService(
+        importer=mock_importer,
+        github_client=mock_client,
+    )
+
+    client = TestClient(app)
+    app.dependency_overrides[get_analysis_service] = lambda: service
+    try:
+        resp = client.get("/api/v1/analyze/pull-request/testowner/testrepo/50?provider=mock")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["ai_provider"] == "mock"
+        assert data["files"][0]["hunks"][0]["provider_used"] == "mock"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_api_analyze_pr_includes_change_graph(mock_pr_details, mock_source_code):
+    """Verify change_graph is populated in PRAnalysisReport from API call without breaking existing schema."""
+    mock_importer = MagicMock(spec=GitHubPRImporter)
+    mock_importer.import_pull_request.return_value = mock_pr_details
+
+    mock_client = MagicMock(spec=GitHubClient)
+    mock_client.get_file_content.return_value = mock_source_code
+
+    service = ChangeGuardAnalysisService(
+        importer=mock_importer,
+        github_client=mock_client,
+    )
+
+    client = TestClient(app)
+    app.dependency_overrides[get_analysis_service] = lambda: service
+    try:
+        resp = client.get("/api/v1/analyze/pull-request/testowner/testrepo/50")
+        assert resp.status_code == 200
+        data = resp.json()
+
+        # Existing schema fields preserved
+        assert data["owner"] == "testowner"
+        assert data["total_files_analyzed"] == 3
+        assert len(data["files"]) == 3
+
+        # Milestone 5 change_graph populated
+        assert "change_graph" in data
+        cg = data["change_graph"]
+        assert cg is not None
+        assert cg["total_nodes"] >= 3
+        assert cg["total_edges"] >= 2
+        assert len(cg["changed_entities"]) >= 1
+    finally:
+        app.dependency_overrides.clear()
+
+

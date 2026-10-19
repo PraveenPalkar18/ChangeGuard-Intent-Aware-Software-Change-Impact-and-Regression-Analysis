@@ -1,4 +1,5 @@
 """FastAPI routes for End-to-End Pull Request Analysis."""
+from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from backend.app.core.exceptions import (
     GitHubAuthenticationException,
@@ -36,6 +37,7 @@ def analyze_pr_by_payload(
             repo=payload.repo,
             pr_number=payload.pr_number,
             fetch_source_files=payload.fetch_source_files,
+            provider_name=payload.provider_name,
         )
     except GitHubAuthenticationException as exc:
         raise HTTPException(status_code=401, detail={"error": exc.message, "details": exc.details})
@@ -60,6 +62,7 @@ def analyze_pr_by_path(
     repo: str,
     pr_number: int,
     fetch_source: bool = True,
+    provider: Optional[str] = None,
     service: ChangeGuardAnalysisService = Depends(get_analysis_service),
 ):
     try:
@@ -68,6 +71,7 @@ def analyze_pr_by_path(
             repo=repo,
             pr_number=pr_number,
             fetch_source_files=fetch_source,
+            provider_name=provider,
         )
     except GitHubAuthenticationException as exc:
         raise HTTPException(status_code=401, detail={"error": exc.message, "details": exc.details})

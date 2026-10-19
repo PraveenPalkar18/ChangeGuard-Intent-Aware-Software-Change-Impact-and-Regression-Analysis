@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     GITHUB_API_BASE_URL: str = "https://api.github.com"
     GITHUB_TIMEOUT_SECONDS: int = 30
 
-    # Model configuration placeholders for upcoming milestones
-    AI_PROVIDER: str = "mock"
-    AI_MODEL: str = "baseline"
+    # Model configuration
+    AI_PROVIDER: str = "tfidf"
+    AI_MODEL: str = "tfidf-word-v1"
     AI_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(

@@ -74,7 +74,7 @@ ChangeGuard/
 │   │   ├── repository/             # AST / Tree-sitter parsers (TreeSitterPythonParser, EntityHunkMapper)
 │   │   ├── intent/                 # AI Intent Engine (AIModelProvider, IntentAnalyzer, TF-IDF, CodeBERT)
 │   │   ├── analysis/               # Orchestration pipeline (ChangeGuardAnalysisService, models)
-│   │   ├── graph/                  # [Milestone 5] NetworkX change graph
+│   │   ├── graph/                  # Change & Dependency Graph (ChangeGraphBuilder, models, impact traversal)
 │   │   ├── impact/                 # [Milestone 6] Impact analysis & propagation
 │   │   ├── testing/                # [Milestone 7] Regression test recommender
 │   │   ├── database/               # [Milestone 8] SQLAlchemy / PostgreSQL models
@@ -88,7 +88,8 @@ ChangeGuard/
 │       ├── test_tree_sitter_parser.py # Tree-sitter AST parsing tests
 │       ├── test_entity_mapper.py   # Entity-hunk association tests
 │       ├── test_intent_analyzer.py # AI Intent engine and fallback tests
-│       └── test_analysis_service.py # End-to-end integration pipeline tests
+│       ├── test_analysis_service.py # End-to-end integration pipeline tests
+│       └── test_change_graph.py    # Change & dependency graph and traversal tests
 ├── docs/                           # Living project documentation
 ├── scripts/
 │   └── run_importer.py             # CLI runner for quick PR inspection

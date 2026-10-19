@@ -153,30 +153,74 @@ Runs an end-to-end ChangeGuard analysis for a specified GitHub Pull Request.
   "pr_intent_summary": "Test2\n\nAdd example ci pipeline...",
   "files": [
     {
-      "file_path": "src/flask/app.py",
+      "filename": "app/billing.py",
       "status": "modified",
-      "hunks_count": 1,
+      "patch_available": true,
       "source_available": true,
-      "limitations": [],
+      "ast_entities_found": 2,
+      "hunks_count": 1,
       "hunks": [
         {
-          "hunk_id": "src/flask/app.py#H1",
-          "file_path": "src/flask/app.py",
-          "old_start": 45,
-          "old_lines": 5,
-          "new_start": 45,
-          "new_lines": 12,
+          "hunk_index": 1,
+          "header": "@@ -3,3 +3,5 @@ class BillingService:",
+          "old_start_line": 3,
+          "new_start_line": 3,
+          "change_type": "modified",
+          "matched_entity_id": "app/billing.py::BillingService.calculate_discount",
+          "matched_entity_name": "calculate_discount",
+          "matched_entity_type": "method",
+          "association_type": "enclosing",
           "classification": "EXPLAINED",
-          "similarity_score": 0.42,
           "confidence": 0.85,
-          "explanation": "Hunk changes align with stated PR intent. Direct symbol mention found: ['Flask'].",
-          "enclosing_entities": ["Flask.add_url_rule"],
-          "model_provider": "tfidf [fell back from codebert]"
+          "similarity_score": 0.32,
+          "reason": "Hunk changes align with stated PR intent. Direct symbol mention found: ['calculate_discount'].",
+          "evidence": ["Direct reference to entity 'calculate_discount' in stated intent."],
+          "limitations": [],
+          "model_used": "tfidf-baseline",
+          "provider_used": "tfidf"
         }
-      ]
+      ],
+      "limitations": []
     }
   ],
-  "limitations": []
+  "change_graph": {
+    "total_nodes": 6,
+    "total_edges": 5,
+    "changed_entities": [
+      "entity:app/billing.py::BillingService.calculate_discount"
+    ],
+    "impacted_entities_count": 1,
+    "impacted_files_count": 1,
+    "impacted_entities": [
+      {
+        "node_id": "entity:app/checkout.py::process_order",
+        "name": "process_order",
+        "entity_type": "function",
+        "file_path": "app/checkout.py",
+        "min_distance": 1,
+        "impact_paths": [
+          {
+            "target_id": "entity:app/checkout.py::process_order",
+            "target_name": "process_order",
+            "target_type": "function",
+            "target_file": "app/checkout.py",
+            "path_nodes": [
+              "entity:app/billing.py::BillingService.calculate_discount",
+              "entity:app/checkout.py::process_order"
+            ],
+            "path_description": "app/billing.py::calculate_discount -> called by app/checkout.py::process_order",
+            "distance": 1,
+            "impact_reason": "Calls changed function/method 'app/billing.py::calculate_discount'"
+          }
+        ]
+      }
+    ],
+    "impacted_files": [
+      "app/checkout.py"
+    ],
+    "graph_limitations": []
+  },
+  "processing_limitations": []
 }
 ```
 

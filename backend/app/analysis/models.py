@@ -2,6 +2,7 @@
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from backend.app.intent.models import IntentClassification
+from backend.app.graph.models import ChangeGraphReport
 
 
 class PRAnalysisRequest(BaseModel):
@@ -10,6 +11,7 @@ class PRAnalysisRequest(BaseModel):
     repo: str = Field(..., min_length=1, max_length=100, description="GitHub repository name")
     pr_number: int = Field(..., gt=0, description="Pull Request number")
     fetch_source_files: bool = Field(default=True, description="Whether to fetch full repository source for Tree-sitter AST parsing")
+    provider_name: Optional[str] = Field(default=None, description="Optional AI model provider ('tfidf', 'codebert', 'mock')")
 
 
 class HunkAnalysisDetail(BaseModel):
@@ -65,4 +67,6 @@ class PRAnalysisReport(BaseModel):
     uncertain_count: int = 0
     overall_intent_summary: str = ""
     files: List[FileAnalysisReport] = Field(default_factory=list)
+    change_graph: Optional[ChangeGraphReport] = Field(default=None, description="Change and dependency graph with downstream impact propagation")
     processing_limitations: List[str] = Field(default_factory=list)
+

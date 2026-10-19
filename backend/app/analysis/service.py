@@ -1,5 +1,5 @@
 """End-to-End ChangeGuard Analysis Service orchestrating M1-M4 pipelines."""
-from typing import List, Optional
+from typing import List, Optional, Dict
 from backend.app.github.client import GitHubClient
 from backend.app.github.importer import GitHubPRImporter
 from backend.app.preprocessing.diff_parser import parse_patch
@@ -17,6 +17,8 @@ from backend.app.analysis.models import (
     FileAnalysisReport,
     HunkAnalysisDetail,
 )
+from backend.app.graph.graph_builder import ChangeGraphBuilder
+from backend.app.graph.models import ChangeGraphReport
 
 
 class ChangeGuardAnalysisService:
@@ -28,11 +30,14 @@ class ChangeGuardAnalysisService:
         github_client: Optional[GitHubClient] = None,
         intent_analyzer: Optional[IntentAnalyzer] = None,
         code_parser: Optional[TreeSitterPythonParser] = None,
+        graph_builder: Optional[ChangeGraphBuilder] = None,
     ):
         self._importer = importer or GitHubPRImporter()
         self._github_client = github_client or GitHubClient()
-        self._intent_analyzer = intent_analyzer or IntentAnalyzer()
+        self._custom_intent_analyzer = intent_analyzer
         self._code_parser = code_parser or TreeSitterPythonParser()
+        self._custom_graph_builder = graph_builder
+
 
     def analyze_pull_request(
         self,
@@ -40,6 +45,7 @@ class ChangeGuardAnalysisService:
         repo: str,
         pr_number: int,
         fetch_source_files: bool = True,
+        provider_name: Optional[str] = None,
     ) -> PRAnalysisReport:
         """Run complete end-to-end analysis on a GitHub Pull Request.
 
@@ -48,10 +54,19 @@ class ChangeGuardAnalysisService:
             repo: GitHub repository name.
             pr_number: Pull request number.
             fetch_source_files: If True, fetches full repository source for Tree-sitter AST parsing.
+            provider_name: Optional AI provider override ('tfidf', 'codebert', 'mock').
 
         Returns:
             PRAnalysisReport with per-file, per-hunk classifications, evidence, and limitations.
         """
+        # Resolve active IntentAnalyzer based on explicit provider_name or injected instance
+        if provider_name:
+            active_analyzer = IntentAnalyzer(provider_name=provider_name)
+        elif self._custom_intent_analyzer is not None:
+            active_analyzer = self._custom_intent_analyzer
+        else:
+            active_analyzer = IntentAnalyzer()
+
         # 1. Ingest PR metadata, commits, and diff patches
         pr_details = self._importer.import_pull_request(owner=owner, repo=repo, pr_number=pr_number)
 
@@ -74,12 +89,19 @@ class ChangeGuardAnalysisService:
         unexplained_count = 0
         uncertain_count = 0
 
+        # Change & Dependency Graph inputs (Milestone 5)
+        parsed_files_map: Dict[str, Optional[ParseResult]] = {}
+        file_statuses: Dict[str, str] = {}
+        changed_entity_ids: List[str] = []
+
         # 3. Process each changed file
         for f in pr_details.files:
             file_limitations: List[str] = []
+            file_statuses[f.filename] = f.status
 
             # Check if patch is available
             if not f.patch or not f.patch.strip():
+                parsed_files_map[f.filename] = None
                 file_reports.append(
                     FileAnalysisReport(
                         filename=f.filename,
@@ -126,6 +148,7 @@ class ChangeGuardAnalysisService:
             if is_python_file and not source_available and fetch_source_files:
                 file_limitations.append("Full repository source could not be retrieved from GitHub API; entity mapping limited to diff hunk line ranges.")
 
+            parsed_files_map[f.filename] = new_parse_result
             ast_entities_count = len(new_parse_result.entities) if (new_parse_result and new_parse_result.entities) else 0
 
             # 5. Process each hunk with Entity Mapping and Intent Analysis
@@ -146,6 +169,13 @@ class ChangeGuardAnalysisService:
                 matched_type = primary_assoc.matched_entity_type.value if (primary_assoc and primary_assoc.matched_entity_type) else None
                 assoc_type = primary_assoc.association_type if primary_assoc else "file_level"
 
+                # Track changed entities for ChangeGraph (Milestone 5)
+                if matched_id:
+                    changed_entity_ids.append(matched_id)
+                else:
+                    changed_entity_ids.append(f.filename)
+
+
                 # Find entity object for context if matched
                 matched_entity_obj = None
                 if matched_id and new_parse_result:
@@ -163,7 +193,7 @@ class ChangeGuardAnalysisService:
                     association_type=assoc_type,
                 )
 
-                intent_res = self._intent_analyzer.analyze_hunk(pr_context, hunk_ctx)
+                intent_res = active_analyzer.analyze_hunk(pr_context, hunk_ctx)
 
                 # Tally statistics
                 if intent_res.classification == IntentClassification.EXPLAINED:
@@ -226,7 +256,12 @@ class ChangeGuardAnalysisService:
                 f"or cross-component overlap requiring reviewer verification."
             )
 
-        provider_info = self._intent_analyzer.provider.get_model_info()
+        provider_info = active_analyzer.provider.get_model_info()
+
+        # 8. Build Change and Dependency Graph (Milestone 5)
+        graph_builder = self._custom_graph_builder or ChangeGraphBuilder()
+        graph_builder.build_from_parse_results(parsed_files_map, file_statuses)
+        change_graph_report = graph_builder.compute_impact(changed_entity_ids)
 
         return PRAnalysisReport(
             owner=owner,
@@ -238,8 +273,8 @@ class ChangeGuardAnalysisService:
             state=pr_details.state,
             base_branch=pr_details.base_branch,
             head_branch=pr_details.head_branch,
-            ai_provider=self._intent_analyzer.provider.provider_name,
-            ai_model=self._intent_analyzer.provider.model_name,
+            ai_provider=active_analyzer.provider.provider_name,
+            ai_model=active_analyzer.provider.model_name,
             total_files_analyzed=len(file_reports),
             total_hunks_analyzed=total_hunks_analyzed,
             explained_count=explained_count,
@@ -247,5 +282,6 @@ class ChangeGuardAnalysisService:
             uncertain_count=uncertain_count,
             overall_intent_summary=summary,
             files=file_reports,
+            change_graph=change_graph_report,
             processing_limitations=global_limitations,
         )

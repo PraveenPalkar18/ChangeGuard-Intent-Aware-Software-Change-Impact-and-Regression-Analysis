@@ -288,5 +288,54 @@
   - `test_analysis_service_propagates_not_found_error`: Validates 404 propagation on missing PRs.
   - `test_api_analyze_pull_request_post_and_get`: Validates HTTP 200 response on `POST` and `GET` analysis endpoints.
 - **Current status**:
-  End-to-end integration audit complete. Analysis pipeline operational. 46/46 automated tests passing in 2.28s. Live inference verified on GitHub PRs. Ready for Milestone 5 upon confirmation.
+  End-to-end integration audit complete. Analysis pipeline operational. 46/46 automated tests passing in 2.28s. Live inference verified on GitHub PRs.
+
+---
+
+### Entry: 2026-10-19 - Part 1: Provider Wiring Fix & Part 2: Milestone 5 Change & Dependency Graph
+
+- **Date**: 2026-10-19
+- **Task**: Fix AI provider wiring from API through service, factory, and intent analyzer to ensure `provider_name='tfidf'` invokes real TF-IDF similarity. Implement Milestone 5: Change & Dependency Graph using NetworkX.
+- **What was implemented**:
+  1. **Part 1 — Provider Selection & Attribution**:
+     - Identified root cause of mock provider usage: `AI_PROVIDER` was defaulted to `"mock"` in config and `.env` from Milestone 1 placeholders, and `PRAnalysisRequest` / `analyze_pull_request` did not accept or route `provider_name`.
+     - Updated `PRAnalysisRequest` and `POST /api/v1/analyze/pull-request` to accept optional `provider_name`.
+     - Updated `GET /api/v1/analyze/pull-request/{owner}/{repo}/{pr_number}` to accept optional `provider` query parameter.
+     - Updated `ChangeGuardAnalysisService` to instantiate `IntentAnalyzer(provider_name=provider_name)` when specified, correctly routing to `create_model_provider`.
+     - Updated `create_model_provider` so `mock` and `tfidf` are never wrapped in unnecessary fallbacks, and added eager availability checking to `FallbackModelProvider` so that when `codebert` is requested without `torch` installed, it immediately switches to `tfidf` with clear attribution `"tfidf [fell back from codebert]"`.
+     - Updated default in `config.py` and `.env` to `AI_PROVIDER=tfidf` and `AI_MODEL=tfidf-word-v1`.
+     - Added unit and API regression tests verifying `tfidf` computes real non-zero cosine similarity with sub-word token expansion, while `mock` remains available for deterministic testing.
+  2. **Part 2 — Milestone 5 Change and Dependency Graph**:
+     - Created `backend/app/graph/models.py` defining `NodeType` (`FILE`, `CLASS`, `FUNCTION`, `METHOD`, `UNKNOWN`), `EdgeType` (`CONTAINS`, `IMPORTS`, `CALLS`), `GraphNode`, `GraphEdge`, `ImpactPath`, `ImpactedEntity`, and `ChangeGraphReport`.
+     - Created `backend/app/graph/graph_builder.py` using `networkx.DiGraph`:
+       - Constructs file nodes and entity nodes from Tree-sitter `ParseResult` objects.
+       - Adds `CONTAINS` edges for file-to-entity and class-to-method containment.
+       - Adds `IMPORTS` edges resolving module/file imports across parsed files.
+       - Adds `CALLS` edges resolving call sites to local and imported target entities.
+       - Unresolved external imports (e.g. standard library, external packages) and unparsed/binary files are tracked in limitations without inventing false graph edges.
+       - Implemented `compute_impact(changed_entity_ids, max_depth=5)` performing BFS traversal over reverse call, import, and containment edges to identify downstream impacted entities and files.
+       - Generates explainable impact propagation paths: e.g. `changed function -> called by caller -> contained in file`.
+       - Safe cycle prevention using per-source visited tracking to handle recursive calls without infinite loops.
+     - Integrated `change_graph: Optional[ChangeGraphReport]` into `PRAnalysisReport` and `ChangeGuardAnalysisService` without breaking any existing API fields.
+     - Added 6 focused tests in `backend/tests/test_change_graph.py` and API test in `backend/tests/test_analysis_service.py`.
+- **Files changed**:
+  - `backend/app/core/config.py` (Modified)
+  - `.env` (Modified)
+  - `backend/requirements.txt` (Modified - added `networkx>=3.0.0`)
+  - `backend/app/intent/factory.py` (Modified)
+  - `backend/app/intent/intent_analyzer.py` (Modified)
+  - `backend/app/analysis/models.py` (Modified)
+  - `backend/app/analysis/service.py` (Modified)
+  - `backend/app/api/v1/analysis.py` (Modified)
+  - `backend/app/graph/__init__.py` (Created)
+  - `backend/app/graph/models.py` (Created)
+  - `backend/app/graph/graph_builder.py` (Created)
+  - `backend/tests/test_analysis_service.py` (Modified)
+  - `backend/tests/test_change_graph.py` (Created)
+  - `docs/API.md` (Updated)
+  - `docs/ARCHITECTURE.md` (Updated)
+  - `docs/DEVELOPMENT_LOG.md` (Updated)
+- **Current status**:
+  Milestone 5 complete. 58/58 automated tests passing cleanly in 2.51s. Real TF-IDF inference verified. NetworkX change and dependency graph fully operational with explainable downstream impact paths.
+
 

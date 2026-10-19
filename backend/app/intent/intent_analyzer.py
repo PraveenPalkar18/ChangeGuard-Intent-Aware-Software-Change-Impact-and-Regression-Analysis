@@ -19,10 +19,15 @@ class IntentAnalyzer(BaseIntentAnalyzer):
     def __init__(
         self,
         provider: Optional[AIModelProvider] = None,
+        provider_name: Optional[str] = None,
+        model_name: Optional[str] = None,
         explained_threshold: float = 0.20,
         unexplained_threshold: float = 0.05,
     ):
-        self._provider = provider or create_model_provider()
+        if provider is not None:
+            self._provider = provider
+        else:
+            self._provider = create_model_provider(provider_name=provider_name, model_name=model_name)
         self._explained_threshold = explained_threshold
         self._unexplained_threshold = unexplained_threshold
 

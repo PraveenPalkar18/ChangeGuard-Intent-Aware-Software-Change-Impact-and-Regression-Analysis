@@ -1,10 +1,25 @@
 """ChangeGuard Backend Application Entrypoint."""
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from backend.app.core.config import settings
 from backend.app.core.exceptions import ChangeGuardException
 from backend.app.api.v1.router import api_v1_router
+from backend.app.monitoring.poller import get_polling_worker
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start background monitoring if enabled by default
+    worker = get_polling_worker()
+    if settings.MONITORING_ENABLED_BY_DEFAULT:
+        worker.start()
+    yield
+    # Shutdown: Stop worker cleanly
+    worker.stop()
 
 
 def create_application() -> FastAPI:
@@ -15,6 +30,7 @@ def create_application() -> FastAPI:
         description="Intent-Aware Software Change Impact and Regression Analysis Engine",
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # CORS configuration
@@ -49,11 +65,19 @@ def create_application() -> FastAPI:
             "environment": settings.ENVIRONMENT,
         }
 
-    @application.get("/", tags=["Root"])
-    def root():
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    index_html = os.path.join(static_dir, "index.html")
+
+    if os.path.exists(static_dir):
+        application.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @application.get("/dashboard", tags=["Dashboard"])
+    @application.get("/", tags=["Dashboard"])
+    def get_dashboard():
+        if os.path.exists(index_html):
+            return FileResponse(index_html)
         return {
-            "message": "Welcome to ChangeGuard API",
-            "description": "Intent-Aware Software Change Impact and Regression Analysis Engine",
+            "message": "ChangeGuard API is running. Dashboard HTML not found in static directory.",
             "docs": "/docs",
             "health": "/health",
         }

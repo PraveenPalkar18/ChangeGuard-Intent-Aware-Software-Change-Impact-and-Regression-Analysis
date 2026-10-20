@@ -19,6 +19,8 @@ from backend.app.analysis.models import (
 )
 from backend.app.graph.graph_builder import ChangeGraphBuilder
 from backend.app.graph.models import ChangeGraphReport
+from backend.app.impact.risk_analyzer import RiskAnalyzer
+from backend.app.testing.selector import RegressionTestSelector
 
 
 class ChangeGuardAnalysisService:
@@ -31,12 +33,16 @@ class ChangeGuardAnalysisService:
         intent_analyzer: Optional[IntentAnalyzer] = None,
         code_parser: Optional[TreeSitterPythonParser] = None,
         graph_builder: Optional[ChangeGraphBuilder] = None,
+        risk_analyzer: Optional[RiskAnalyzer] = None,
+        test_selector: Optional[RegressionTestSelector] = None,
     ):
         self._importer = importer or GitHubPRImporter()
         self._github_client = github_client or GitHubClient()
         self._custom_intent_analyzer = intent_analyzer
         self._code_parser = code_parser or TreeSitterPythonParser()
         self._custom_graph_builder = graph_builder
+        self._custom_risk_analyzer = risk_analyzer
+        self._custom_test_selector = test_selector
 
 
     def analyze_pull_request(
@@ -263,6 +269,53 @@ class ChangeGuardAnalysisService:
         graph_builder.build_from_parse_results(parsed_files_map, file_statuses)
         change_graph_report = graph_builder.compute_impact(changed_entity_ids)
 
+        # 9. Risk Ranking and Impact Analysis (Milestone 6)
+        risk_analyzer = self._custom_risk_analyzer or RiskAnalyzer()
+        risk_assessment = risk_analyzer.analyze_risk(
+            change_graph_report=change_graph_report,
+            graph=graph_builder.graph,
+            file_reports=file_reports,
+            pr_details=pr_details,
+        )
+
+        # Attach per-file risk details
+        file_risk_map = {fr.filename: fr for fr in risk_assessment.file_risks}
+        for f_rep in file_reports:
+            if f_rep.filename in file_risk_map:
+                f_rep.risk = file_risk_map[f_rep.filename]
+
+        # 10. Regression Test Selection (Milestone 7)
+        test_parse_results: Dict[str, Optional[ParseResult]] = {}
+        for f_path, p_res in parsed_files_map.items():
+            if RegressionTestSelector._is_test_file(f_path):
+                test_parse_results[f_path] = p_res
+
+        # Attempt to discover candidate test files for changed components if source fetching is enabled
+        if fetch_source_files:
+            ref_head = pr_details.head_sha or pr_details.head_branch
+            for f_path in parsed_files_map.keys():
+                if f_path.endswith(".py") and not RegressionTestSelector._is_test_file(f_path):
+                    base_name = f_path.replace("\\", "/").split("/")[-1].replace(".py", "")
+                    candidates = [
+                        f"tests/test_{base_name}.py",
+                        f"tests/{base_name}_test.py",
+                        f"test_{base_name}.py",
+                    ]
+                    for cand in candidates:
+                        if cand not in test_parse_results:
+                            cand_source = self._github_client.get_file_content(owner, repo, cand, ref=ref_head)
+                            if cand_source is not None:
+                                test_parse_results[cand] = self._code_parser.parse_source(cand, cand_source)
+                                break
+
+        test_selector = self._custom_test_selector or RegressionTestSelector()
+        test_selection = test_selector.select_tests(
+            change_graph_report=change_graph_report,
+            test_parse_results=test_parse_results,
+            risk_assessment=risk_assessment,
+            graph=graph_builder.graph,
+        )
+
         return PRAnalysisReport(
             owner=owner,
             repo=repo,
@@ -283,5 +336,7 @@ class ChangeGuardAnalysisService:
             overall_intent_summary=summary,
             files=file_reports,
             change_graph=change_graph_report,
+            risk_assessment=risk_assessment,
+            test_selection=test_selection,
             processing_limitations=global_limitations,
         )

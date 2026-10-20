@@ -338,4 +338,223 @@
 - **Current status**:
   Milestone 5 complete. 58/58 automated tests passing cleanly in 2.51s. Real TF-IDF inference verified. NetworkX change and dependency graph fully operational with explainable downstream impact paths.
 
+---
+
+### Entry: 2026-10-20 - Milestone 6: Impact Analysis & Risk Ranking
+
+- **Date**: 2026-10-20
+- **Task**: Implement Milestone 6: Impact Analysis and Risk Ranking. Multi-factor risk evaluation (LOW, MEDIUM, HIGH), relationship verification (CONFIRMED_STATIC, POTENTIAL, UNKNOWN), explainable high-risk impact paths, per-file/per-entity risk breakdown, and non-breaking API integration.
+- **What was implemented**:
+  1. **Impact and Risk Data Models** (`backend/app/impact/models.py`):
+     - `RiskLevel` Enum: `LOW`, `MEDIUM`, `HIGH`.
+     - `RelationshipConfidence` Enum: `CONFIRMED_STATIC` (direct distance-1 call/import/containment AST relationship), `POTENTIAL` (transitive distance >= 2 downstream paths), and `UNKNOWN` (unresolved internal imports, missing source, or syntax error blind spots).
+     - `RiskFactor`: Captures factor name, risk level, normalized score (0.0 to 1.0), human-readable description, and concrete supporting evidence facts.
+     - `EntityRiskDetail`: Per-entity risk tier, min distance, dependent callers count, dependent files count, impact paths, and specific rationale.
+     - `FileRiskDetail`: Per-file risk tier, churn volume (additions, deletions, hunks), directly changed entities, downstream impacted entities, and file factors.
+     - `PRRiskAssessment`: Overall PR risk tier, composite normalized score, executive summary, explicit `high_risk_reasons`, explainable `primary_impact_paths`, relationship category counts, and static analysis limitations.
+  2. **Risk Ranking Engine** (`backend/app/impact/risk_analyzer.py`):
+     - Evaluates four orthogonal risk dimensions:
+       a. *Downstream Blast Radius*: True downstream callers (excluding home file containment), external dependent files, and propagation depth.
+       b. *Change Scope & Volatility*: Additions, deletions, hunk count, and modified file count.
+       c. *Intent Alignment*: Correlation with stated PR intent; unexplained changes with downstream callers elevate risk, while low similarity score alone on isolated leaf functions never triggers HIGH risk.
+       d. *Dependency Graph Resolvability*: Unresolved internal imports, syntax errors, and missing source code tracked as analysis blind spots.
+     - Enforces explainability: Every HIGH risk PR or entity requires explicit documented reasons and supporting step-by-step impact paths.
+     - Cycle safe: Handles circular/recursive function calls gracefully without infinite loops.
+  3. **Non-Breaking Pipeline and API Integration**:
+     - Updated `FileAnalysisReport` with optional `risk: Optional[FileRiskDetail] = None`.
+     - Updated `PRAnalysisReport` with optional `risk_assessment: Optional[PRRiskAssessment] = None`.
+     - Integrated `RiskAnalyzer` into `ChangeGuardAnalysisService.analyze_pull_request`, running immediately after graph construction.
+     - Preserved 100% backward compatibility for all existing API consumers and schemas.
+  4. **Automated Testing**:
+     - Created `backend/tests/test_risk_analyzer.py` covering:
+       - `test_low_risk_scenario`: Localized change with 0 callers and explained intent is rated LOW.
+       - `test_medium_risk_scenario`: Moderate change with direct callers is rated MEDIUM with CONFIRMED_STATIC linkage.
+       - `test_high_risk_blast_radius_scenario`: Broad blast radius (>4 callers across multiple files/depth) triggers HIGH risk with primary impact paths.
+       - `test_high_risk_unexplained_changes_with_downstream_impact`: Unexplained changes affecting callers triggers HIGH risk.
+       - `test_low_similarity_alone_does_not_label_high_risk`: Verifies Requirement 6 that low similarity on leaf functions does NOT label PR as HIGH risk.
+       - `test_cycle_safety_during_risk_analysis`: Recursive cycles in call graph terminate safely without hanging.
+       - `test_incomplete_graph_and_missing_source_handling`: Missing source and unresolved internal imports elevate uncertainty factors.
+       - `test_relationship_confidence_distinction`: Distance 1 is CONFIRMED_STATIC, distance 2 is POTENTIAL.
+     - Added `test_api_analyze_pr_includes_risk_assessment` in `backend/tests/test_analysis_service.py` validating end-to-end API payloads.
+- **Files changed**:
+  - `backend/app/impact/__init__.py` (Created)
+  - `backend/app/impact/models.py` (Created)
+  - `backend/app/impact/risk_analyzer.py` (Created)
+  - `backend/app/analysis/models.py` (Modified)
+  - `backend/app/analysis/service.py` (Modified)
+  - `backend/tests/test_risk_analyzer.py` (Created)
+  - `backend/tests/test_analysis_service.py` (Modified)
+  - `docs/API.md` (Updated)
+  - `docs/ARCHITECTURE.md` (Updated)
+  - `docs/DEVELOPMENT_LOG.md` (Updated)
+- **Current status**:
+  Milestone 6 complete. 67/67 automated tests passing cleanly in 3.53s. Multi-factor risk ranking, explainable impact paths, and relationship categorization fully operational.
+
+---
+
+### Entry: 2026-10-20 - Milestone 7: Regression Test Selection & Cost Audit
+
+- **Date**: 2026-10-20
+- **Task**: Part A: Cost and architecture audit (verifying external API usage, ensuring 100% local deterministic algorithms, confirming TF-IDF default with zero hosted LLM calls). Part B: Implement Milestone 7: Regression Test Selection.
+- **What was implemented**:
+  1. **Cost & Architecture Audit**:
+     - Audited all PR analysis flows: verified zero hosted LLM API calls are made during routine analysis.
+     - GitHub REST API calls are read-only (`PyGithub`) using existing token authentication.
+     - Intent analysis runs on local TF-IDF vectorization with sub-word token expansion (zero API tokens, zero external latency/cost).
+     - Confirmed `settings.AI_PROVIDER="tfidf"`; mocks are never silently substituted and are used strictly when requested or in unit tests.
+  2. **Regression Test Selection Data Models** (`backend/app/testing/models.py`):
+     - `TestPriority` Enum: `P0_CRITICAL` (direct verification of changed code), `P1_HIGH` (distance-1 impacted callers or module import), `P2_MEDIUM` (transitive callers or naming heuristics), `P3_LOW` (module/directory correspondence). Added `__test__ = False` to prevent pytest discovery warnings.
+     - `TestMatchType` Enum: `STATIC_CALL`, `STATIC_IMPORT`, `TRANSITIVE_GRAPH`, `NAMING_HEURISTIC`.
+     - `SelectedTestCase`: Holds test ID, function/class name, file, priority tier, deterministic score ($0.0 \dots 1.0$), match type, relationship confidence, linked entity IDs, evidence strings, and suggested test execution command.
+     - `TestSelectionReport`: Aggregates discovered vs selected test counts, priority breakdown (critical, high, medium, low), executive summary, selection strategy, recommended test cases, and limitations.
+  3. **Regression Test Selector Engine** (`backend/app/testing/selector.py`):
+     - Discovers test files (`test_*.py`, `*_test.py`, `tests/`) and test entities (`def test_*`, `class Test*`).
+     - Correlates tests with modified and impacted code using:
+       - Confirmed direct AST call sites (`STATIC_CALL`).
+       - Downstream dependency graph propagation calls (`TRANSITIVE_GRAPH`).
+       - Static module imports (`STATIC_IMPORT`).
+       - Transparent symbol and file naming heuristics (`NAMING_HEURISTIC`).
+     - Ranks tests using local deterministic scoring.
+     - Never executes arbitrary PR code automatically; provides safe suggested CLI commands (`pytest <path> -k <name>`).
+  4. **Non-Breaking API Integration**:
+     - Updated `PRAnalysisReport` with optional `test_selection: Optional[TestSelectionReport] = None`.
+     - Integrated `RegressionTestSelector` into `ChangeGuardAnalysisService.analyze_pull_request`.
+     - Added repository test file candidate discovery via `get_file_content` for modified components when source fetching is enabled.
+     - Preserved 100% backward compatibility for all existing API endpoints and schemas.
+  5. **Automated Testing**:
+     - Created `backend/tests/test_test_selector.py` covering:
+       - `test_selector_direct_ast_call_critical`: Direct AST call to modified entity ranked P0_CRITICAL.
+       - `test_selector_impacted_entity_call_high`: Direct call to downstream impacted caller ranked P1_HIGH.
+       - `test_selector_symbol_naming_heuristic`: Symbol-level naming convention match.
+       - `test_selector_static_import_of_module`: Module-level import match ranked P1_HIGH.
+       - `test_selector_file_naming_heuristic`: File-level naming heuristic ranked P2_MEDIUM.
+       - `test_selector_no_tests_discovered`: Repositories with zero tests handled gracefully.
+       - `test_selector_missing_or_unparsed_source`: Unparsed files handled gracefully in limitations.
+     - Added `test_api_analyze_pr_includes_test_selection` in `backend/tests/test_analysis_service.py` validating end-to-end API payloads.
+- **Files changed**:
+  - `backend/app/testing/__init__.py` (Created)
+  - `backend/app/testing/models.py` (Created)
+  - `backend/app/testing/selector.py` (Created)
+  - `backend/app/analysis/models.py` (Modified)
+  - `backend/app/analysis/service.py` (Modified)
+  - `backend/tests/test_test_selector.py` (Created)
+  - `backend/tests/test_analysis_service.py` (Modified)
+  - `docs/API.md` (Updated)
+  - `docs/ARCHITECTURE.md` (Updated)
+  - `docs/DEVELOPMENT_LOG.md` (Updated)
+- **Current status**:
+  Milestone 7 complete. 75/75 automated tests passing cleanly in 2.81s. Targeted regression test selection fully operational with zero hosted LLM API token consumption.
+
+---
+
+### Entry: 2026-10-20 - Milestone 8: Automatic GitHub PR Monitoring
+
+- **Date**: 2026-10-20
+- **Task**: Implement Milestone 8: Automatic local GitHub PR polling worker with persistent state tracking, retry logic, duplicate suppression, and API rate-limit awareness.
+- **What was implemented**:
+  1. **Background Polling Worker (`backend/app/monitoring/poller.py`)**:
+     - Created `PRPollingWorker` running as a controlled background daemon thread.
+     - Implemented rate limit pre-flight checking: queries GitHub API rate limits before each cycle and skips execution if quota is critically low (< 5 remaining).
+     - Polling interval is fully configurable (`MONITORING_POLL_INTERVAL_SECONDS`, default 60s) and disabled by default (`MONITORING_ENABLED_BY_DEFAULT=false`).
+     - Duplicate suppression: compares incoming PR `head.sha` with the recorded `head_sha` in local state. If unchanged, analysis is skipped to avoid redundant processing.
+     - Revision re-analysis: if a PR receives a new commit (head SHA changes), re-analysis triggers automatically.
+     - Resilient error handling & retries: transitions failed analyses with error message and incremented retry count up to `MAX_PROCESSING_RETRIES` (3) before transitioning to `FAILED`.
+  2. **Thread-Safe Persistent State Store (`backend/app/monitoring/state_store.py`)**:
+     - Created `MonitoringStateStore` writing atomically to `data/monitoring_state.json` using temporary file creation and atomic OS replacement.
+     - Tracks registered repositories (`RepoConfig`) and PR records (`PRStateRecord`) across restarts.
+  3. **REST Management Endpoints (`backend/app/api/v1/monitoring.py`)**:
+     - `GET /api/v1/monitoring/status`: Returns worker health, running state, and repository counts.
+     - `POST /api/v1/monitoring/start` & `POST /api/v1/monitoring/stop`: Worker lifecycle controls.
+     - `POST /api/v1/monitoring/poll`: Trigger immediate on-demand polling cycle.
+     - `GET`, `POST`, `DELETE /api/v1/monitoring/repositories`: Monitored repo management.
+     - `GET /api/v1/monitoring/prs`: List tracked PR records with owner/repo/status filters.
+     - `POST /api/v1/monitoring/prs/{owner}/{repo}/{pr_number}/reanalyze`: Force re-analysis.
+  4. **GitHub Client Enhancements (`backend/app/github/client.py`)**:
+     - Added `get_pull_requests(owner, repo, state, sort, direction)` with pagination limit.
+     - Added `get_rate_limit_info()`.
+     - Added `post_pull_request_comment(owner, repo, pr_number, body)`.
+
+---
+
+### Entry: 2026-10-20 - Milestone 9: Local Dashboard and Safe GitHub Reporting
+
+- **Date**: 2026-10-20
+- **Task**: Implement Milestone 9: Local dashboard single-page frontend and safe GitHub reporting.
+- **What was implemented**:
+  1. **Zero-Dependency Local Dashboard (`backend/app/static/index.html`)**:
+     - Built a complete, modern responsive single-page application served directly by FastAPI at `/` and `/dashboard`.
+     - Uses native HTML, modern CSS glassmorphism, responsive grid, and Vanilla JavaScript with zero npm/node dependencies or build steps.
+     - Features:
+       - Real-time monitoring status badges (worker running/stopped, tracked PRs, active repos).
+       - Worker controls: Start, Stop, Trigger Poll button with live feedback.
+       - Repository manager: Add repository (owner/repo), toggle, delete.
+       - PR table: PR number, title, author, branch, status badges (`completed`, `running`, `failed`, `pending`), commit hash, and inspection action.
+       - Comprehensive PR Detail Modal:
+         - Overall risk assessment badge, score, and summary.
+         - Intent classifications and supporting evidence per hunk.
+         - Impacted entities, blast radius, and explainable dependency paths.
+         - Ranked regression test recommendations with priority badges and suggested commands.
+         - Explicit system limitations and failures.
+         - Force re-analysis button and safe GitHub comment button.
+  2. **Safe Read-Only Reporting Safeguard**:
+     - Endpoint `POST /api/v1/monitoring/prs/{owner}/{repo}/{pr_number}/comment` enforces `ENABLE_GITHUB_REPORTING=false` default.
+     - Rejects comment posting safely when disabled, returning an informational explanation without remote write modifications.
+
+---
+
+### Entry: 2026-10-20 - Milestone 10: Evaluation, Reliability, and Deployment
+
+- **Date**: 2026-10-20
+- **Task**: Implement Milestone 10: Repeatable empirical evaluation framework, integration reliability tests, documentation, and deployment guides.
+- **What was implemented**:
+  1. **Benchmark Fixture Suite (`backend/app/evaluation/benchmark_fixtures.py`)**:
+     - Implemented 4 curated architectural pull request scenarios with ground-truth labels:
+       - `PR-101`: Focused bugfix (auth token validation in `refresh_token`), isolated caller, unit test.
+       - `PR-102`: Scope creep (database optimization + stealth unannounced analytics tracker modification).
+       - `PR-103`: Ambiguous/empty PR description with utility formatting modification.
+       - `PR-104`: Core architectural change (`DatabasePool.execute`), downstream caller propagation, test suite targets.
+  2. **Repeatable Evaluator (`backend/app/evaluation/evaluator.py`)**:
+     - Executes all benchmark scenarios through the genuine ChangeGuard AST parser, diff engine, TF-IDF intent analyzer, dependency graph, risk engine, and test selector.
+     - Calculates empirical metrics:
+       - Intent Classification: Precision, Recall, F1 per class (`EXPLAINED`, `UNEXPLAINED`, `UNCERTAIN`), Confusion Matrix, False Positives/Negatives.
+       - Dependency Impact: Precision, Recall, F1 for impacted entity identification.
+       - Regression Test Selection: Target test coverage (Hit Rate), Precision.
+       - Risk Alignment Rate: Percentage of PR scenarios whose risk tier matches ground truth.
+     - Generates publication-ready Markdown and structured JSON reports.
+  3. **Evaluation CLI Script (`scripts/run_evaluation.py`)**:
+     - Executable CLI runner writing reports to `docs/EVALUATION_REPORT.md` and `data/evaluation_report.json`.
+  4. **Automated Reliability Tests**:
+     - `backend/tests/test_monitoring.py` (10 tests): State store persistence, atomic file writing, polling loop, duplicate suppression, commit update re-analysis, retry exhaustion, rate limit pausing, API endpoints, reporting permission guards, and dashboard HTML serving.
+     - `backend/tests/test_evaluation.py` (2 tests): Fixture integrity and automated evaluation metrics verification.
+  5. **Verification**:
+     - Full repository test suite: **87 passed, 1 warning in 6.75s**.
+     - Benchmark evaluation output: **100% test coverage hit-rate, 100% impact recall, 100% risk alignment**.
+
+---
+
+### Entry: 2026-10-20 - On-Demand Real GitHub Pull Request Workflow & Verification
+
+- **Date**: 2026-10-20
+- **Task**: Prepare ChangeGuard for on-demand testing against real GitHub pull requests, bridge on-demand CLI/API workflows, persist on-demand runs to local state store, and add mocked + live GitHub integration tests.
+- **What was implemented**:
+  1. **On-Demand PR Analysis CLI (`scripts/analyze_pr.py`)**:
+     - Built a standalone terminal runner that accepts `--owner`, `--repo`, `--pr`, and optional `--provider` and `--json`.
+     - Fetches PR metadata and changed-file diffs from GitHub.
+     - Runs the complete ChangeGuard pipeline: Tree-sitter code parsing, TF-IDF intent engine, change & dependency graph, multi-factor risk assessment, and targeted regression test selection.
+     - Automatically saves the analysis result into `data/monitoring_state.json` so directly analyzed PRs appear instantly in the local dashboard without requiring background worker polling.
+     - Displays formatted terminal output with risk tier, blast radius, intent hunk evidence, and recommended test execution commands.
+  2. **API State Store Persistence Integration (`backend/app/api/v1/analysis.py`)**:
+     - Integrated `_save_to_state_store` in both `POST /api/v1/analyze/pull-request` and `GET /api/v1/analyze/pull-request/{owner}/{repo}/{pr_number}`.
+     - Guarantees on-demand analyses triggered via curl, Swagger, or the dashboard's "Quick Direct PR Analysis" card are persistently recorded.
+  3. **Automated On-Demand Workflow Tests (`backend/tests/test_on_demand_workflow.py`)**:
+     - Added `test_on_demand_analysis_with_mocked_github` verifying full pipeline execution with simulated GitHub responses.
+     - Added `test_on_demand_api_persists_to_state_store` verifying FastAPI endpoints persist state records.
+     - Added `test_real_public_github_pr_live_analysis` validating live network execution against `octocat/Hello-World` PR #1.
+  4. **Live Verification**:
+     - Tested live GitHub API authentication and rate limit quota (4,950+ requests remaining).
+     - Verified live end-to-end analysis on `octocat/Hello-World` PR #1 and `pallets/flask` PR #5000.
+     - Verified full test suite: **90 passed, 1 warning in 7.27s**.
+
+
+
 

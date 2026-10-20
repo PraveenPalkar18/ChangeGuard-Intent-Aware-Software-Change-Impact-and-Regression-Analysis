@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChangeGuard — Intent-Aware Change Impact & Regression Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --purple: #bc8cff;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      font-size: 14px;
+      padding: 0;
+      margin: 0;
+    }
+    header {
+      background: rgba(22, 27, 34, 0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-area { display: flex; align-items: center; gap: 12px; }
+    .logo-badge {
+      background: linear-gradient(135deg, #1f6feb, #8957e5);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+    .title-group h1 { font-size: 18px; font-weight: 600; }
+    .title-group p { font-size: 12px; color: var(--text-muted); }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #21262d;
+      border: 1px solid var(--card-border);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
+    .status-dot.idle { background: var(--warning); }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+    .btn-primary { background: #238636; color: #fff; }
+    .btn-primary:hover { background: #2ea043; }
+    .btn-secondary { background: #21262d; color: var(--text-main); border-color: var(--card-border); }
+    .btn-secondary:hover { background: #30363d; border-color: #8b949e; }
+    .btn-danger { background: rgba(248, 81, 73, 0.15); color: var(--danger); border-color: rgba(248, 81, 73, 0.4); }
+    .btn-danger:hover { background: rgba(248, 81, 73, 0.25); }
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+    .grid-dashboard { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
+    @media (max-width: 960px) { .grid-dashboard { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-main);
+    }
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
+    .stat-box {
+      background: #0d1117;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #21262d;
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+    .input-field {
+      width: 100%;
+      padding: 8px 12px;
+      background: #0d1117;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 13px;
+      margin-bottom: 10px;
+      font-family: inherit;
+    }
+    .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2); }
+    .repo-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: #0d1117;
+      border: 1px solid #21262d;
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .pr-table { width: 100%; border-collapse: collapse; }
+    .pr-table th, .pr-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--card-border); }
+    .pr-table th { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+    .pr-table tr:hover { background: rgba(88, 166, 255, 0.04); cursor: pointer; }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+    .badge-completed { background: rgba(63, 185, 80, 0.15); color: var(--success); border: 1px solid rgba(63, 185, 80, 0.3); }
+    .badge-running { background: rgba(88, 166, 255, 0.15); color: var(--accent); border: 1px solid rgba(88, 166, 255, 0.3); }
+    .badge-pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); border: 1px solid rgba(210, 153, 34, 0.3); }
+    .badge-failed { background: rgba(248, 81, 73, 0.15); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.3); }
+    .badge-high { background: rgba(248, 81, 73, 0.18); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.4); }
+    .badge-medium { background: rgba(210, 153, 34, 0.18); color: #e3b341; border: 1px solid rgba(210, 153, 34, 0.4); }
+    .badge-low { background: rgba(63, 185, 80, 0.18); color: #56d364; border: 1px solid rgba(63, 185, 80, 0.4); }
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(1, 4, 9, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 1100px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: var(--card-bg);
+      z-index: 10;
+    }
+    .modal-body { padding: 24px; }
+    .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px; }
+    .tab-btn {
+      padding: 8px 16px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .hunk-card {
+      background: #0d1117;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .code-tag {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: #21262d;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #79c0ff;
+    }
+    .notice {
+      padding: 12px 16px;
+      border-radius: 8px;
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      color: var(--text-main);
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-badge">🛡️ ChangeGuard</div>
+    <div class="title-group">
+      <h1>Change Impact & Regression Analysis</h1>
+      <p>Local Monitoring & Explainable Regression Engine</p>
+    </div>
+  </div>
+  <div class="header-actions">
+    <div class="status-pill">
+      <span class="status-dot" id="worker-status-dot"></span>
+      <span id="worker-status-text">Checking worker...</span>
+    </div>
+    <button class="btn btn-secondary" id="btn-toggle-worker" onclick="toggleWorker()">Start Poller</button>
+    <button class="btn btn-primary" id="btn-poll-now" onclick="triggerManualPoll()">⚡ Poll Now</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="status-banner" style="display:none; margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px;"></div>
+  <div class="grid-dashboard">
+    <!-- Left Column: Repositories & Worker Stats -->
+    <aside>
+      <div class="card">
+        <div class="card-title">Worker Activity</div>
+        <div class="stat-grid">
+          <div class="stat-box">
+            <div class="stat-label">Tracked PRs</div>
+            <div class="stat-val" id="stat-total-prs">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Completed</div>
+            <div class="stat-val" style="color: var(--success);" id="stat-completed-prs">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Pending / Run</div>
+            <div class="stat-val" style="color: var(--accent);" id="stat-pending-prs">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Failed</div>
+            <div class="stat-val" style="color: var(--danger);" id="stat-failed-prs">0</div>
+          </div>
+        </div>
+        <p style="font-size: 11px; color: var(--text-muted);" id="stat-poll-info">Poll interval: 60s</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Monitored Repositories</div>
+        <div id="repo-list">
+          <p style="color: var(--text-muted); font-size: 12px;">No repositories configured.</p>
+        </div>
+
+        <form id="add-repo-form" onsubmit="addRepository(event)" style="margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 14px;">
+          <input type="text" id="input-owner" class="input-field" placeholder="Owner / Org (e.g. pallets)" required>
+          <input type="text" id="input-repo" class="input-field" placeholder="Repository (e.g. flask)" required>
+          <button type="submit" class="btn btn-secondary" style="width: 100%;">+ Add Repository</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Quick Direct PR Analysis</div>
+        <form onsubmit="runDirectAnalysis(event)">
+          <input type="text" id="direct-owner" class="input-field" placeholder="Owner" required>
+          <input type="text" id="direct-repo" class="input-field" placeholder="Repo" required>
+          <input type="number" id="direct-pr" class="input-field" placeholder="PR Number" required>
+          <button type="submit" class="btn btn-primary" style="width: 100%;" id="btn-direct-analyze">Analyze PR Now</button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- Right Column: Recent Pull Requests -->
+    <main>
+      <div class="card">
+        <div class="card-title">
+          <span>Detected Pull Requests & Reports</span>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label for="repo-filter-select" style="font-size: 11px; color: var(--text-muted);">Filter:</label>
+            <select id="repo-filter-select" class="input-field" style="margin-bottom: 0; width: auto; font-size: 11px; padding: 3px 8px;" onchange="applyPRFilter()">
+              <option value="monitored">Monitored Repos Only</option>
+              <option value="all">All Repositories</option>
+            </select>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="loadDashboardData()">Refresh</button>
+          </div>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="pr-table">
+            <thead>
+              <tr>
+                <th>PR</th>
+                <th>Repository</th>
+                <th>Title / Author</th>
+                <th>Status</th>
+                <th>Risk Level</th>
+                <th>Analyzed</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="pr-table-body">
+              <tr>
+                <td colspan="7" class="empty-state">Loading detected pull requests...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Modal for PR Details -->
+<div class="modal-overlay" id="pr-modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h2 id="modal-pr-title" style="font-size: 16px;">Pull Request Details</h2>
+        <span class="code-tag" id="modal-pr-coords" style="margin-top: 4px; display: inline-block;">owner/repo #0</span>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn btn-secondary" id="btn-post-comment" onclick="postGitHubComment()">Post GitHub Comment</button>
+        <button class="btn btn-secondary" onclick="closeModal()">✕ Close</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('intent')">Intent & Hunks</button>
+        <button class="tab-btn" onclick="switchTab('graph')">Dependency Graph</button>
+        <button class="tab-btn" onclick="switchTab('risk')">Risk Ranking</button>
+        <button class="tab-btn" onclick="switchTab('tests')">Regression Tests</button>
+        <button class="tab-btn" onclick="switchTab('limitations')">Limitations</button>
+      </div>
+
+      <div id="tab-content-intent"></div>
+      <div id="tab-content-graph" style="display: none;"></div>
+      <div id="tab-content-risk" style="display: none;"></div>
+      <div id="tab-content-tests" style="display: none;"></div>
+      <div id="tab-content-limitations" style="display: none;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let activeReport = null;
+  let activeOwner = '';
+  let activeRepo = '';
+  let activePRNumber = 0;
+  let isWorkerRunning = false;
+  let cachedPRs = [];
+  let configuredRepos = [];
+
+  function showBanner(message, type = 'info') {
+    const banner = document.getElementById('status-banner');
+    if (!banner) return;
+    banner.style.display = 'block';
+    if (type === 'error') {
+      banner.style.background = 'rgba(248, 81, 73, 0.15)';
+      banner.style.border = '1px solid rgba(248, 81, 73, 0.4)';
+      banner.style.color = '#ff7b72';
+    } else if (type === 'success') {
+      banner.style.background = 'rgba(63, 185, 80, 0.15)';
+      banner.style.border = '1px solid rgba(63, 185, 80, 0.4)';
+      banner.style.color = '#56d364';
+    } else {
+      banner.style.background = 'rgba(88, 166, 255, 0.15)';
+      banner.style.border = '1px solid rgba(88, 166, 255, 0.4)';
+      banner.style.color = '#79c0ff';
+    }
+    banner.innerHTML = message;
+    if (type !== 'error') {
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 7000);
+    }
+  }
+
+  async function loadDashboardData() {
+    try {
+      // 1. Fetch monitoring status
+      const statusRes = await fetch('/api/v1/monitoring/status');
+      if (statusRes.ok) {
+        const s = await statusRes.json();
+        isWorkerRunning = s.is_running;
+        configuredRepos = s.monitored_repos || [];
+
+        const dot = document.getElementById('worker-status-dot');
+        const text = document.getElementById('worker-status-text');
+        if (s.is_polling) {
+          dot.className = 'status-dot active';
+          text.innerText = 'Polling in Progress...';
+        } else if (s.is_running) {
+          dot.className = 'status-dot active';
+          text.innerText = 'Polling Active';
+        } else {
+          dot.className = 'status-dot idle';
+          text.innerText = 'Poller Stopped';
+        }
+
+        document.getElementById('btn-toggle-worker').innerText = s.is_running ? 'Stop Poller' : 'Start Poller';
+        document.getElementById('stat-total-prs').innerText = s.total_prs_tracked;
+        document.getElementById('stat-completed-prs').innerText = s.completed_count;
+        document.getElementById('stat-pending-prs').innerText = s.pending_count + s.running_count;
+        document.getElementById('stat-failed-prs').innerText = s.failed_count;
+
+        let pollInfo = `Poll interval: ${s.poll_interval_seconds}s | Last poll: ${s.last_poll_time ? new Date(s.last_poll_time).toLocaleTimeString() : 'Never'}`;
+        if (s.last_successful_poll_time) {
+          pollInfo += ` | Last ok: ${new Date(s.last_successful_poll_time).toLocaleTimeString()}`;
+        }
+        if (s.last_error) {
+          pollInfo += `<br><span style="color: var(--danger);">Error: ${escapeHtml(s.last_error)}</span>`;
+        }
+        document.getElementById('stat-poll-info').innerHTML = pollInfo;
+
+        renderRepos(s.monitored_repos);
+        updateRepoFilterOptions(s.monitored_repos);
+      }
+
+      // 2. Fetch PR records
+      const prRes = await fetch('/api/v1/monitoring/prs');
+      if (prRes.ok) {
+        cachedPRs = await prRes.json();
+        applyPRFilter();
+      }
+    } catch (e) {
+      console.error("Dashboard refresh error:", e);
+    }
+  }
+
+  function updateRepoFilterOptions(repos) {
+    const sel = document.getElementById('repo-filter-select');
+    if (!sel) return;
+    const currentVal = sel.value;
+    let html = `
+      <option value="monitored">Monitored Repos Only</option>
+      <option value="all">All Repositories</option>
+    `;
+    if (repos && repos.length > 0) {
+      repos.forEach(r => {
+        const key = `${r.owner}/${r.repo}`.toLowerCase();
+        html += `<option value="${key}">${r.owner}/${r.repo}</option>`;
+      });
+    }
+    sel.innerHTML = html;
+    if (Array.from(sel.options).some(o => o.value === currentVal)) {
+      sel.value = currentVal;
+    }
+  }
+
+  function applyPRFilter() {
+    const sel = document.getElementById('repo-filter-select');
+    const filter = sel ? sel.value : 'monitored';
+
+    let filtered = cachedPRs;
+    if (filter === 'monitored') {
+      const activeKeys = new Set(configuredRepos.map(r => `${r.owner}/${r.repo}`.toLowerCase()));
+      filtered = cachedPRs.filter(p => activeKeys.has(p.repo_key.toLowerCase()));
+    } else if (filter !== 'all') {
+      filtered = cachedPRs.filter(p => p.repo_key.toLowerCase() === filter.toLowerCase());
+    }
+    renderPRTable(filtered);
+  }
+
+  function renderRepos(repos) {
+    const list = document.getElementById('repo-list');
+    if (!repos || repos.length === 0) {
+      list.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No repositories configured.</p>';
+      return;
+    }
+    list.innerHTML = repos.map(r => `
+      <div class="repo-item">
+        <span>${r.owner}/${r.repo}</span>
+        <button class="btn btn-danger" style="padding: 2px 6px; font-size: 10px;" onclick="removeRepository('${r.owner}', '${r.repo}')">Remove</button>
+      </div>
+    `).join('');
+  }
+
+  function renderPRTable(prs) {
+    const tbody = document.getElementById('pr-table-body');
+    if (!prs || prs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No pull requests detected for the selected filter. Configure a repository or click "⚡ Poll Now".</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = prs.map(p => {
+      const parts = p.repo_key.split('/');
+      const owner = parts[0];
+      const repo = parts[1];
+      const riskLevel = p.analysis_report && p.analysis_report.risk_assessment ? p.analysis_report.risk_assessment.overall_risk_level : 'N/A';
+      const riskClass = riskLevel === 'HIGH' ? 'badge-high' : (riskLevel === 'MEDIUM' ? 'badge-medium' : 'badge-low');
+      const timeStr = p.last_analyzed_at ? new Date(p.last_analyzed_at).toLocaleString() : (p.last_polled_at ? new Date(p.last_polled_at).toLocaleTimeString() : '-');
+
+      return `
+        <tr onclick="viewPRDetail('${owner}', '${repo}', ${p.pr_number})">
+          <td><span class="code-tag">#${p.pr_number}</span></td>
+          <td><b>${p.repo_key}</b></td>
+          <td>
+            <div style="font-weight: 500;">${escapeHtml(p.title || 'Untitled PR')}</div>
+            <div style="font-size: 11px; color: var(--text-muted);">by @${escapeHtml(p.author || 'unknown')}</div>
+          </td>
+          <td><span class="badge badge-${p.status}">${p.status}</span></td>
+          <td>${riskLevel !== 'N/A' ? `<span class="badge ${riskClass}">${riskLevel}</span>` : '<span style="color:var(--text-muted);">-</span>'}</td>
+          <td style="font-size: 12px; color: var(--text-muted);">${timeStr}</td>
+          <td>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="event.stopPropagation(); reanalyzePR('${owner}', '${repo}', ${p.pr_number})">Analyze</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  async function toggleWorker() {
+    const btn = document.getElementById('btn-toggle-worker');
+    if (btn) btn.disabled = true;
+    try {
+      const endpoint = isWorkerRunning ? '/api/v1/monitoring/stop' : '/api/v1/monitoring/start';
+      const res = await fetch(endpoint, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        showBanner(data.status === 'started' ? 'PR Poller worker started successfully.' : (data.status === 'stopped' ? 'PR Poller worker stopped cleanly.' : `Worker status: ${data.status}`), 'info');
+      }
+    } catch (err) {
+      showBanner(`Worker control error: ${err.message}`, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+      await loadDashboardData();
+    }
+  }
+
+  async function triggerManualPoll() {
+    const btn = document.getElementById('btn-poll-now');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerText = '⏳ Polling...';
+    }
+    showBanner('Triggering immediate repository poll...', 'info');
+
+    try {
+      const res = await fetch('/api/v1/monitoring/poll', { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        const s = data.summary || {};
+        if (s.errors && s.errors.length > 0) {
+          showBanner(`Poll completed with errors: ${escapeHtml(s.errors.join("; "))}`, 'error');
+        } else {
+          showBanner(`Poll completed: ${s.repos_checked} repo(s) checked, ${s.prs_discovered} PR(s) discovered, ${s.prs_analyzed} analyzed (${s.prs_skipped} skipped).`, 'success');
+        }
+      } else {
+        const err = await res.json();
+        showBanner(`Poll request failed: ${escapeHtml(err.detail || 'HTTP ' + res.status)}`, 'error');
+      }
+    } catch (err) {
+      showBanner(`Network error during poll: ${escapeHtml(err.message)}`, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerText = '⚡ Poll Now';
+      }
+      await loadDashboardData();
+    }
+  }
+
+  async function addRepository(e) {
+    e.preventDefault();
+    const owner = document.getElementById('input-owner').value.trim();
+    const repo = document.getElementById('input-repo').value.trim();
+    if (!owner || !repo) return;
+
+    try {
+      const res = await fetch('/api/v1/monitoring/repositories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner, repo, enabled: true, pr_state: 'all' })
+      });
+      if (res.ok) {
+        showBanner(`Repository ${owner}/${repo} added to monitoring.`, 'success');
+        document.getElementById('input-owner').value = '';
+        document.getElementById('input-repo').value = '';
+      } else {
+        const err = await res.json();
+        showBanner(`Failed to add repository: ${escapeHtml(err.detail || 'Error')}`, 'error');
+      }
+    } catch (err) {
+      showBanner(`Error: ${escapeHtml(err.message)}`, 'error');
+    }
+    await loadDashboardData();
+  }
+
+  async function removeRepository(owner, repo) {
+    try {
+      const res = await fetch(`/api/v1/monitoring/repositories/${owner}/${repo}`, { method: 'DELETE' });
+      if (res.ok) {
+        showBanner(`Repository ${owner}/${repo} removed.`, 'info');
+      }
+    } catch (err) {
+      showBanner(`Error removing repository: ${escapeHtml(err.message)}`, 'error');
+    }
+    await loadDashboardData();
+  }
+
+  async function runDirectAnalysis(e) {
+    e.preventDefault();
+    const owner = document.getElementById('direct-owner').value.trim();
+    const repo = document.getElementById('direct-repo').value.trim();
+    const pr_number = parseInt(document.getElementById('direct-pr').value.trim());
+    const btn = document.getElementById('btn-direct-analyze');
+    btn.disabled = true;
+    btn.innerText = 'Analyzing...';
+
+    try {
+      const res = await fetch('/api/v1/analyze/pull-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ owner, repo, pr_number })
+      });
+      if (res.ok) {
+        const report = await res.json();
+        openModalWithReport(report, owner, repo, pr_number);
+        loadDashboardData();
+      } else {
+        const err = await res.json();
+        alert("Analysis error: " + (err.detail ? JSON.stringify(err.detail) : "Failed to analyze PR."));
+      }
+    } catch (err) {
+      alert("Error triggering analysis: " + err);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Analyze PR Now';
+    }
+  }
+
+  async function reanalyzePR(owner, repo, pr_number) {
+    try {
+      const res = await fetch(`/api/v1/monitoring/prs/${owner}/${repo}/${pr_number}/reanalyze`, { method: 'POST' });
+      if (res.ok) {
+        const rec = await res.json();
+        if (rec.analysis_report) {
+          openModalWithReport(rec.analysis_report, owner, repo, pr_number);
+        }
+        loadDashboardData();
+      }
+    } catch (e) {
+      alert("Re-analysis error: " + e);
+    }
+  }
+
+  async function viewPRDetail(owner, repo, pr_number) {
+    try {
+      const res = await fetch(`/api/v1/monitoring/prs/${owner}/${repo}/${pr_number}`);
+      if (res.ok) {
+        const rec = await res.json();
+        if (rec.analysis_report) {
+          openModalWithReport(rec.analysis_report, owner, repo, pr_number);
+        } else {
+          alert(`PR #${pr_number} status is '${rec.status}'. ${rec.error_message || 'Analysis pending or not available.'}`);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function openModalWithReport(report, owner, repo, pr_number) {
+    activeReport = report;
+    activeOwner = owner;
+    activeRepo = repo;
+    activePRNumber = pr_number;
+
+    document.getElementById('modal-pr-title').innerText = report.title || `PR #${pr_number}`;
+    document.getElementById('modal-pr-coords').innerText = `${owner}/${repo} #${pr_number} (${report.base_branch} ← ${report.head_branch})`;
+
+    renderIntentTab(report);
+    renderGraphTab(report);
+    renderRiskTab(report);
+    renderTestsTab(report);
+    renderLimitationsTab(report);
+
+    switchTab('intent');
+    document.getElementById('pr-modal-overlay').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('pr-modal-overlay').style.display = 'none';
+  }
+
+  function switchTab(tabId) {
+    ['intent', 'graph', 'risk', 'tests', 'limitations'].forEach(t => {
+      document.getElementById(`tab-content-${t}`).style.display = (t === tabId) ? 'block' : 'none';
+    });
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach((btn, idx) => {
+      btn.className = 'tab-btn' + (['intent', 'graph', 'risk', 'tests', 'limitations'][idx] === tabId ? ' active' : '');
+    });
+  }
+
+  function renderIntentTab(r) {
+    let hunksHtml = '';
+    if (r.files) {
+      r.files.forEach(f => {
+        if (f.hunks) {
+          f.hunks.forEach(h => {
+            const badgeClass = h.classification === 'EXPLAINED' ? 'badge-completed' : (h.classification === 'UNEXPLAINED' ? 'badge-failed' : 'badge-pending');
+            hunksHtml += `
+              <div class="hunk-card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                  <span class="code-tag">${escapeHtml(f.filename)} | Hunk #${h.hunk_index}</span>
+                  <span class="badge ${badgeClass}">${h.classification}</span>
+                </div>
+                <div style="font-size: 12px; margin-bottom: 6px;"><b>Target:</b> <code>${escapeHtml(h.matched_entity_id || f.filename)}</code></div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;"><b>Reason:</b> ${escapeHtml(h.reason || 'N/A')}</div>
+                <div style="font-size: 11px; color: var(--accent);">Similarity: ${(h.similarity_score * 100).toFixed(1)}% | Provider: ${h.provider_used || 'tfidf'}</div>
+              </div>
+            `;
+          });
+        }
+      });
+    }
+
+    document.getElementById('tab-content-intent').innerHTML = `
+      <div class="notice">
+        <b>Stated PR Intent Summary:</b><br>${escapeHtml(r.overall_intent_summary || 'No intent summary provided.')}
+      </div>
+      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
+        <span class="badge badge-completed">Explained: ${r.explained_count || 0}</span>
+        <span class="badge badge-failed">Unexplained: ${r.unexplained_count || 0}</span>
+        <span class="badge badge-pending">Uncertain: ${r.uncertain_count || 0}</span>
+      </div>
+      <h3 style="font-size: 14px; margin-bottom: 12px;">Diff Hunks & Intent Classification:</h3>
+      ${hunksHtml || '<p style="color:var(--text-muted);">No diff hunks available.</p>'}
+    `;
+  }
+
+  function renderGraphTab(r) {
+    const cg = r.change_graph;
+    if (!cg) {
+      document.getElementById('tab-content-graph').innerHTML = '<p class="empty-state">No dependency graph computed.</p>';
+      return;
+    }
+
+    let entitiesHtml = '';
+    if (cg.impacted_entities) {
+      entitiesHtml = cg.impacted_entities.map(e => `
+        <tr>
+          <td><span class="code-tag">${escapeHtml(e.name)}</span></td>
+          <td>${e.entity_type}</td>
+          <td>${escapeHtml(e.file_path)}</td>
+          <td>${e.min_distance} hop(s)</td>
+          <td style="font-size: 11px; font-family: var(--font-mono);">${e.impact_paths && e.impact_paths[0] ? escapeHtml(e.impact_paths[0].path_description) : '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    document.getElementById('tab-content-graph').innerHTML = `
+      <div class="stat-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
+        <div class="stat-box"><div class="stat-label">Graph Nodes</div><div class="stat-val">${cg.total_nodes}</div></div>
+        <div class="stat-box"><div class="stat-label">Directed Edges</div><div class="stat-val">${cg.total_edges}</div></div>
+        <div class="stat-box"><div class="stat-label">Impacted Entities</div><div class="stat-val">${cg.impacted_entities_count}</div></div>
+        <div class="stat-box"><div class="stat-label">Impacted Files</div><div class="stat-val">${cg.impacted_files_count}</div></div>
+      </div>
+      <h3 style="font-size: 14px; margin-bottom: 10px;">Downstream Impacted Entities:</h3>
+      <table class="pr-table">
+        <thead>
+          <tr><th>Entity</th><th>Type</th><th>File</th><th>Distance</th><th>Explainable Impact Path</th></tr>
+        </thead>
+        <tbody>
+          ${entitiesHtml || '<tr><td colspan="5" class="empty-state">No downstream entities impacted.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function renderRiskTab(r) {
+    const ra = r.risk_assessment;
+    if (!ra) {
+      document.getElementById('tab-content-risk').innerHTML = '<p class="empty-state">No risk assessment available.</p>';
+      return;
+    }
+
+    const riskBadge = ra.overall_risk_level === 'HIGH' ? 'badge-high' : (ra.overall_risk_level === 'MEDIUM' ? 'badge-medium' : 'badge-low');
+    let factorsHtml = '';
+    if (ra.risk_factors) {
+      factorsHtml = ra.risk_factors.map(f => `
+        <div class="stat-box" style="margin-bottom: 8px;">
+          <div style="display:flex; justify-content:space-between;">
+            <b>${f.name}</b>
+            <span class="badge ${f.level === 'HIGH' ? 'badge-high' : (f.level === 'MEDIUM' ? 'badge-medium' : 'badge-low')}">${f.level}</span>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${escapeHtml(f.description)}</p>
+          ${f.evidence ? `<ul style="margin-left: 18px; font-size: 11px; color: var(--accent); margin-top: 4px;">${f.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}</ul>` : ''}
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('tab-content-risk').innerHTML = `
+      <div class="notice">
+        <b>Overall PR Risk:</b> <span class="badge ${riskBadge}">${ra.overall_risk_level}</span> (Score: <b>${ra.overall_risk_score}</b>)<br>
+        <p style="margin-top: 6px;">${escapeHtml(ra.summary || '')}</p>
+      </div>
+      <h3 style="font-size: 14px; margin-bottom: 10px;">Multi-Factor Risk Breakdown:</h3>
+      ${factorsHtml}
+    `;
+  }
+
+  function renderTestsTab(r) {
+    const ts = r.test_selection;
+    if (!ts) {
+      document.getElementById('tab-content-tests').innerHTML = '<p class="empty-state">No regression test selection performed.</p>';
+      return;
+    }
+
+    let testsHtml = '';
+    if (ts.recommended_tests && ts.recommended_tests.length > 0) {
+      testsHtml = ts.recommended_tests.map(t => `
+        <div class="hunk-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span class="code-tag" style="font-size: 12px; font-weight:600;">${escapeHtml(t.test_file)} :: ${escapeHtml(t.test_name)}</span>
+            <span class="badge ${t.priority === 'P0_CRITICAL' ? 'badge-high' : (t.priority === 'P1_HIGH' ? 'badge-medium' : 'badge-completed')}">${t.priority}</span>
+          </div>
+          <div style="font-size: 12px; margin-bottom: 6px;"><b>Match Technique:</b> <code>${t.match_type}</code> (Confidence: ${t.relationship_confidence})</div>
+          ${t.evidence ? `<ul style="margin-left: 18px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">${t.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}</ul>` : ''}
+          <div style="background: #010409; padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--accent);">
+            $ ${escapeHtml(t.suggested_command)}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      testsHtml = '<p class="empty-state">No relevant tests mapped to changed components.</p>';
+    }
+
+    document.getElementById('tab-content-tests').innerHTML = `
+      <div class="notice">
+        <b>Regression Test Selection Strategy:</b> ${escapeHtml(ts.selection_strategy)}<br>
+        <div style="display: flex; gap: 10px; margin-top: 8px;">
+          <span>Critical: <b>${ts.critical_count}</b></span>
+          <span>High: <b>${ts.high_count}</b></span>
+          <span>Medium: <b>${ts.medium_count}</b></span>
+          <span>Low: <b>${ts.low_count}</b></span>
+        </div>
+      </div>
+      <h3 style="font-size: 14px; margin-bottom: 12px;">Recommended Regression Tests:</h3>
+      ${testsHtml}
+    `;
+  }
+
+  function renderLimitationsTab(r) {
+    const lims = r.processing_limitations || [];
+    document.getElementById('tab-content-limitations').innerHTML = `
+      <h3 style="font-size: 14px; margin-bottom: 12px;">Analysis Limitations & Boundaries:</h3>
+      <ul style="margin-left: 20px; font-size: 13px; color: var(--text-muted); line-height: 1.8;">
+        ${lims.map(l => `<li>${escapeHtml(l)}</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  async function postGitHubComment() {
+    if (!activeOwner || !activeRepo || !activePRNumber) return;
+    const btn = document.getElementById('btn-post-comment');
+    btn.disabled = true;
+    btn.innerText = 'Posting...';
+
+    try {
+      const res = await fetch(`/api/v1/monitoring/prs/${activeOwner}/${activeRepo}/${activePRNumber}/comment`, { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'disabled') {
+        alert(data.message);
+      } else if (data.status === 'posted') {
+        alert("Report comment successfully posted to GitHub PR!");
+      } else {
+        alert("Failed to post comment. Check GitHub token permissions.");
+      }
+    } catch (e) {
+      alert("Error: " + e);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = 'Post GitHub Comment';
+    }
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+
+  // Initial load and periodic refresh
+  loadDashboardData();
+  setInterval(loadDashboardData, 10000);
+</script>
+</body>
+</html>

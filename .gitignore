@@ -60,6 +60,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local storage and state
+data/
+*.db
+monitoring_state*.json
+
 # OS specific
 Thumbs.db
 Desktop.ini

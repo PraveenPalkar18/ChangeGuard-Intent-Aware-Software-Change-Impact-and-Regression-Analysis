@@ -127,3 +127,87 @@ class GitHubClient:
         except (UnknownObjectException, Exception):
             # Non-existent file at this ref (e.g. newly added file, deleted file) or network issue
             return None
+
+    def get_pull_requests(
+        self,
+        owner: str,
+        repo: str,
+        state: str = "open",
+        sort: str = "updated",
+        direction: str = "desc",
+        max_results: int = 30,
+    ):
+        """Fetch list of pull requests for a repository with standardized error translation."""
+        full_repo_name = f"{owner}/{repo}"
+        try:
+            repository = self._client.get_repo(full_repo_name)
+            pulls_paginated = repository.get_pulls(state=state, sort=sort, direction=direction)
+            results = []
+            for p in pulls_paginated:
+                results.append(p)
+                if len(results) >= max_results:
+                    break
+            return results
+        except BadCredentialsException as exc:
+            raise GitHubAuthenticationException(
+                message=f"GitHub authentication failed. Check your token.",
+                details={"owner": owner, "repo": repo, "error": str(exc)},
+            ) from exc
+        except UnknownObjectException as exc:
+            raise GitHubResourceNotFoundException(
+                message=f"Repository '{full_repo_name}' not found.",
+                details={"owner": owner, "repo": repo, "error": str(exc)},
+            ) from exc
+        except RateLimitExceededException as exc:
+            raise GitHubRateLimitExceededException(
+                message="GitHub API rate limit exceeded.",
+                details={"owner": owner, "repo": repo, "error": str(exc)},
+            ) from exc
+        except GithubException as exc:
+            if exc.status == 401:
+                raise GitHubAuthenticationException(
+                    message="GitHub authentication failed.",
+                    details={"status": exc.status, "data": exc.data},
+                ) from exc
+            elif exc.status == 404:
+                raise GitHubResourceNotFoundException(
+                    message=f"Repository '{full_repo_name}' not found.",
+                    details={"status": exc.status, "data": exc.data},
+                ) from exc
+            elif exc.status in (403, 429) and "rate limit" in str(exc.data).lower():
+                raise GitHubRateLimitExceededException(
+                    message="GitHub API rate limit exceeded.",
+                    details={"status": exc.status, "data": exc.data},
+                ) from exc
+            raise GitHubAPIException(
+                message=f"GitHub API error: {exc.data if hasattr(exc, 'data') else str(exc)}",
+                status_code=exc.status or 502,
+                details={"status": exc.status, "data": exc.data if hasattr(exc, "data") else str(exc)},
+            ) from exc
+        except Exception as exc:
+            raise GitHubAPIException(
+                message=f"Unexpected error communicating with GitHub: {str(exc)}",
+                status_code=500,
+                details={"error": str(exc)},
+            ) from exc
+
+    def post_pull_request_comment(
+        self,
+        owner: str,
+        repo: str,
+        pr_number: int,
+        comment_body: str,
+    ) -> bool:
+        """Post a comment to a Pull Request if GitHub write reporting is enabled in settings."""
+        if not settings.ENABLE_GITHUB_REPORTING:
+            return False
+
+        full_repo_name = f"{owner}/{repo}"
+        try:
+            repository = self._client.get_repo(full_repo_name)
+            pr = repository.get_pull(pr_number)
+            pr.create_issue_comment(comment_body)
+            return True
+        except Exception:
+            return False
+

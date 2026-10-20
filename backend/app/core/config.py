@@ -21,6 +21,16 @@ class Settings(BaseSettings):
     AI_MODEL: str = "tfidf-word-v1"
     AI_API_KEY: Optional[str] = None
 
+    # Monitoring & Worker configuration (Milestone 8)
+    MONITORING_ENABLED_BY_DEFAULT: bool = False
+    MONITORING_POLL_INTERVAL_SECONDS: int = 60
+    MONITORING_STATE_FILE: str = "data/monitoring_state.json"
+    MONITORED_REPOSITORIES: str = ""  # Comma-separated list e.g. "octocat/Hello-World,pallets/flask"
+    MAX_PROCESSING_RETRIES: int = 3
+
+    # Reporting configuration (Milestone 9)
+    ENABLE_GITHUB_REPORTING: bool = False  # Disabled by default; read-only operations
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

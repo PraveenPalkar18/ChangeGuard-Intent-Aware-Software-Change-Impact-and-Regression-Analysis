@@ -404,3 +404,92 @@ def test_api_analyze_pr_includes_change_graph(mock_pr_details, mock_source_code)
         app.dependency_overrides.clear()
 
 
+def test_api_analyze_pr_includes_risk_assessment(mock_pr_details, mock_source_code):
+    """Verify Milestone 6 risk_assessment and per-file risk details are populated in API response."""
+    mock_importer = MagicMock(spec=GitHubPRImporter)
+    mock_importer.import_pull_request.return_value = mock_pr_details
+
+    mock_client = MagicMock(spec=GitHubClient)
+    mock_client.get_file_content.return_value = mock_source_code
+
+    service = ChangeGuardAnalysisService(
+        importer=mock_importer,
+        github_client=mock_client,
+    )
+
+    client = TestClient(app)
+    app.dependency_overrides[get_analysis_service] = lambda: service
+    try:
+        resp = client.get("/api/v1/analyze/pull-request/testowner/testrepo/50")
+        assert resp.status_code == 200
+        data = resp.json()
+
+        # Milestone 6 risk_assessment populated
+        assert "risk_assessment" in data
+        risk = data["risk_assessment"]
+        assert risk is not None
+        assert risk["overall_risk_level"] in ["LOW", "MEDIUM", "HIGH"]
+        assert 0.0 <= risk["overall_risk_score"] <= 1.0
+        assert len(risk["summary"]) > 0
+        assert len(risk["risk_factors"]) >= 3
+        assert len(risk["entity_risks"]) >= 1
+
+        # Verify per-file risk details attached to files
+        file_with_risk = next(f for f in data["files"] if f["filename"] == "app/billing.py")
+        assert "risk" in file_with_risk
+        assert file_with_risk["risk"] is not None
+        assert file_with_risk["risk"]["risk_level"] in ["LOW", "MEDIUM", "HIGH"]
+        assert len(file_with_risk["risk"]["reasons"]) >= 1
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_api_analyze_pr_includes_test_selection(mock_pr_details, mock_source_code):
+    """Verify Milestone 7 test_selection is populated in API response without breaking existing fields."""
+    mock_importer = MagicMock(spec=GitHubPRImporter)
+    mock_importer.import_pull_request.return_value = mock_pr_details
+
+    mock_test_source = """from app.billing import calculate_discount
+
+def test_calculate_discount():
+    assert calculate_discount(100, 0.1) == 90
+"""
+
+    def mock_get_content(owner, repo, filename, ref=None):
+        if filename == "app/billing.py":
+            return mock_source_code
+        elif "test" in filename:
+            return mock_test_source
+        return None
+
+    mock_client = MagicMock(spec=GitHubClient)
+    mock_client.get_file_content.side_effect = mock_get_content
+
+    service = ChangeGuardAnalysisService(
+        importer=mock_importer,
+        github_client=mock_client,
+    )
+
+    client = TestClient(app)
+    app.dependency_overrides[get_analysis_service] = lambda: service
+    try:
+        resp = client.get("/api/v1/analyze/pull-request/testowner/testrepo/50")
+        assert resp.status_code == 200
+        data = resp.json()
+
+        # Milestone 7 test_selection populated
+        assert "test_selection" in data
+        ts = data["test_selection"]
+        assert ts is not None
+        assert ts["selected_tests_count"] >= 1
+        assert len(ts["recommended_tests"]) >= 1
+        rec = ts["recommended_tests"][0]
+        assert rec["priority"] in ["P0_CRITICAL", "P1_HIGH", "P2_MEDIUM", "P3_LOW"]
+        assert rec["match_type"] in ["STATIC_CALL", "STATIC_IMPORT", "TRANSITIVE_GRAPH", "NAMING_HEURISTIC"]
+        assert rec["suggested_command"].startswith("pytest ")
+    finally:
+        app.dependency_overrides.clear()
+
+
+
+

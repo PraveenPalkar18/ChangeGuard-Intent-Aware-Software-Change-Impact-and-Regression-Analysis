@@ -3,6 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 from backend.app.intent.models import IntentClassification
 from backend.app.graph.models import ChangeGraphReport
+from backend.app.impact.models import FileRiskDetail, PRRiskAssessment
+from backend.app.testing.models import TestSelectionReport
 
 
 class PRAnalysisRequest(BaseModel):
@@ -44,6 +46,7 @@ class FileAnalysisReport(BaseModel):
     ast_entities_found: int = 0
     hunks_count: int = 0
     hunks: List[HunkAnalysisDetail] = Field(default_factory=list)
+    risk: Optional[FileRiskDetail] = Field(default=None, description="File-level impact and risk ranking")
     limitations: List[str] = Field(default_factory=list)
 
 
@@ -68,5 +71,7 @@ class PRAnalysisReport(BaseModel):
     overall_intent_summary: str = ""
     files: List[FileAnalysisReport] = Field(default_factory=list)
     change_graph: Optional[ChangeGraphReport] = Field(default=None, description="Change and dependency graph with downstream impact propagation")
+    risk_assessment: Optional[PRRiskAssessment] = Field(default=None, description="Overall and per-entity risk ranking and blast radius assessment")
+    test_selection: Optional[TestSelectionReport] = Field(default=None, description="Targeted regression test recommendations")
     processing_limitations: List[str] = Field(default_factory=list)
 

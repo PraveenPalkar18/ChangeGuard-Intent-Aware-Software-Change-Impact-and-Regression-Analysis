@@ -13,12 +13,41 @@ from backend.app.analysis.models import (
 )
 from backend.app.analysis.service import ChangeGuardAnalysisService
 
+from datetime import datetime, timezone
+from backend.app.monitoring.state_store import MonitoringStateStore
+from backend.app.monitoring.models import PRStateRecord, PRProcessingStatus
+
 router = APIRouter(prefix="/analyze", tags=["Analysis"])
 
 
 def get_analysis_service() -> ChangeGuardAnalysisService:
     """Dependency provider for ChangeGuardAnalysisService."""
     return ChangeGuardAnalysisService()
+
+
+def _save_to_state_store(owner: str, repo: str, pr_number: int, report: PRAnalysisReport) -> None:
+    """Helper to save on-demand analysis results into the persistent local store."""
+    try:
+        store = MonitoringStateStore()
+        now_iso = datetime.now(timezone.utc).isoformat()
+        rec = PRStateRecord(
+            repo_key=f"{owner}/{repo}",
+            pr_number=pr_number,
+            head_sha=report.head_branch or "HEAD",
+            title=report.title or "",
+            author=report.author or "",
+            status=PRProcessingStatus.COMPLETED,
+            retry_count=0,
+            created_at=now_iso,
+            last_polled_at=now_iso,
+            last_analyzed_at=now_iso,
+            error_message=None,
+            analysis_report=report,
+        )
+        store.save_pr_record(rec)
+    except Exception:
+        # Non-fatal: if state persistence fails, analysis report is still returned
+        pass
 
 
 @router.post(
@@ -32,13 +61,15 @@ def analyze_pr_by_payload(
     service: ChangeGuardAnalysisService = Depends(get_analysis_service),
 ):
     try:
-        return service.analyze_pull_request(
+        report = service.analyze_pull_request(
             owner=payload.owner,
             repo=payload.repo,
             pr_number=payload.pr_number,
             fetch_source_files=payload.fetch_source_files,
             provider_name=payload.provider_name,
         )
+        _save_to_state_store(payload.owner, payload.repo, payload.pr_number, report)
+        return report
     except GitHubAuthenticationException as exc:
         raise HTTPException(status_code=401, detail={"error": exc.message, "details": exc.details})
     except GitHubResourceNotFoundException as exc:
@@ -66,13 +97,15 @@ def analyze_pr_by_path(
     service: ChangeGuardAnalysisService = Depends(get_analysis_service),
 ):
     try:
-        return service.analyze_pull_request(
+        report = service.analyze_pull_request(
             owner=owner,
             repo=repo,
             pr_number=pr_number,
             fetch_source_files=fetch_source,
             provider_name=provider,
         )
+        _save_to_state_store(owner, repo, pr_number, report)
+        return report
     except GitHubAuthenticationException as exc:
         raise HTTPException(status_code=401, detail={"error": exc.message, "details": exc.details})
     except GitHubResourceNotFoundException as exc:

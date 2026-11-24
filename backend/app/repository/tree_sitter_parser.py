@@ -232,6 +232,7 @@ class TreeSitterPythonParser(BaseCodeParser):
         end_line = outer_node.end_point.row + 1
 
         # Determine entity type, nesting, and identifier
+        base_classes: List[str] = []
         if def_node.type == "class_definition":
             entity_type = CodeEntityType.CLASS
             if parent_entity is None:
@@ -240,6 +241,14 @@ class TreeSitterPythonParser(BaseCodeParser):
                 entity_id = f"{parent_entity.id}.{name}"
             is_async = False
             params = []
+            superclasses_node = def_node.child_by_field_name("superclasses")
+            if superclasses_node:
+                for c in superclasses_node.children:
+                    if c.type in ("(", ")", ",", "comment"):
+                        continue
+                    b_text = c.text.decode("utf-8", errors="ignore").strip()
+                    if b_text:
+                        base_classes.append(b_text)
         else:
             # function_definition
             is_method = parent_entity is not None and parent_entity.entity_type == CodeEntityType.CLASS
@@ -285,6 +294,7 @@ class TreeSitterPythonParser(BaseCodeParser):
             docstring=docstring,
             parameters=params,
             decorators=decorators,
+            base_classes=base_classes,
             is_async=is_async,
         )
         entities.append(entity)

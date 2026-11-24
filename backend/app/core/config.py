@@ -17,9 +17,46 @@ class Settings(BaseSettings):
     GITHUB_TIMEOUT_SECONDS: int = 30
 
     # Model configuration
-    AI_PROVIDER: str = "tfidf"
+    AI_PROVIDER: str = "tfidf"  # 'tfidf', 'groq', 'gemini', 'llm', 'codebert', 'mock'
     AI_MODEL: str = "tfidf-word-v1"
+    AI_MODEL_NAME: Optional[str] = None
     AI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    GROQ_API_KEY: Optional[str] = None
+    AI_API_BASE_URL: Optional[str] = None
+    AI_TIMEOUT_SECONDS: int = 30
+    AI_MAX_OUTPUT_TOKENS: int = 2048
+    AI_FALLBACK_ENABLED: bool = True
+    AI_CACHE_ENABLED: bool = True
+    AI_MAX_INPUT_CHARS: int = 16000
+
+    def get_effective_model_name(self) -> str:
+        """Returns configured AI_MODEL_NAME if specified, otherwise provider default."""
+        if self.AI_MODEL_NAME and self.AI_MODEL_NAME.strip():
+            return self.AI_MODEL_NAME.strip()
+        provider = (self.AI_PROVIDER or "").strip().lower()
+        if provider in ("groq", "groqcloud"):
+            return "qwen/qwen3.8-27b"
+        elif provider in ("gemini", "google"):
+            return "gemini-3.8-flash"
+        return (self.AI_MODEL or "tfidf-word-v1").strip()
+
+    def get_gemini_api_key(self) -> Optional[str]:
+        """Resolves Gemini API key with priority: GEMINI_API_KEY -> AI_API_KEY -> env."""
+        key = self.GEMINI_API_KEY or self.AI_API_KEY
+        if not key:
+            import os
+            key = os.environ.get("GEMINI_API_KEY") or os.environ.get("AI_API_KEY")
+        return key.strip() if key else None
+
+    def get_groq_api_key(self) -> Optional[str]:
+        """Resolves Groq API key with priority: GROQ_API_KEY -> AI_API_KEY -> env."""
+        key = self.GROQ_API_KEY or self.AI_API_KEY
+        if not key:
+            import os
+            key = os.environ.get("GROQ_API_KEY") or os.environ.get("AI_API_KEY")
+        return key.strip() if key else None
+
 
     # Monitoring & Worker configuration (Milestone 8)
     MONITORING_ENABLED_BY_DEFAULT: bool = False

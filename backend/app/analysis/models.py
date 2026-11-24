@@ -1,7 +1,7 @@
 """Data models for End-to-End Pull Request Intent and Impact Analysis."""
 from typing import List, Optional
 from pydantic import BaseModel, Field
-from backend.app.intent.models import IntentClassification
+from backend.app.intent.models import IntentClassification, SemanticHunkAssessment
 from backend.app.graph.models import ChangeGraphReport
 from backend.app.impact.models import FileRiskDetail, PRRiskAssessment
 from backend.app.testing.models import TestSelectionReport
@@ -13,7 +13,7 @@ class PRAnalysisRequest(BaseModel):
     repo: str = Field(..., min_length=1, max_length=100, description="GitHub repository name")
     pr_number: int = Field(..., gt=0, description="Pull Request number")
     fetch_source_files: bool = Field(default=True, description="Whether to fetch full repository source for Tree-sitter AST parsing")
-    provider_name: Optional[str] = Field(default=None, description="Optional AI model provider ('tfidf', 'codebert', 'mock')")
+    provider_name: Optional[str] = Field(default=None, description="Optional AI model provider ('tfidf', 'codebert', 'mock', 'llm')")
 
 
 class HunkAnalysisDetail(BaseModel):
@@ -31,7 +31,12 @@ class HunkAnalysisDetail(BaseModel):
     confidence: float
     similarity_score: float
     reason: str
+    apparent_purpose: str = Field(default="")
     evidence: List[str] = Field(default_factory=list)
+    contradiction_signals: List[str] = Field(default_factory=list)
+    missing_context: List[str] = Field(default_factory=list)
+    uncertainty_score: float = Field(default=0.0)
+    semantic_assessment: Optional[SemanticHunkAssessment] = None
     limitations: List[str] = Field(default_factory=list)
     model_used: str
     provider_used: str
@@ -67,6 +72,7 @@ class PRAnalysisReport(BaseModel):
     total_hunks_analyzed: int = 0
     explained_count: int = 0
     unexplained_count: int = 0
+    contradictory_count: int = 0
     uncertain_count: int = 0
     overall_intent_summary: str = ""
     files: List[FileAnalysisReport] = Field(default_factory=list)

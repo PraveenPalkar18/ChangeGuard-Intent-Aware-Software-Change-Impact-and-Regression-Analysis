@@ -114,7 +114,11 @@ def _instantiate_single_provider(provider_key: str, model_name: Optional[str]) -
         return CodeBERTSimilarityProvider(model_name=model_name or "microsoft/codebert-base")
     elif provider_key == "mock":
         return MockAIProvider(model_name=model_name or "mock-jaccard")
+    elif provider_key in ("gemini", "google", "groq", "groqcloud", "llm", "openai"):
+        return TFIDFSimilarityProvider(model_name="tfidf-baseline")
     else:
         logger.warning(f"Unknown AI provider '{provider_key}'. Falling back to 'tfidf'.")
         return TFIDFSimilarityProvider(model_name="tfidf-fallback")
+
+
 

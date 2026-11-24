@@ -290,14 +290,22 @@ class RegressionTestSelector:
 
     @staticmethod
     def _is_test_file(file_path: str) -> bool:
-        """Determines if a relative file path is a Python test file."""
+        """Determines if a relative file path is a candidate test file across languages."""
         norm = file_path.replace("\\", "/").lower()
-        if not norm.endswith(".py"):
-            return False
         base = norm.split("/")[-1]
         return (
             base.startswith("test_")
             or base.endswith("_test.py")
+            or base.endswith(".test.js")
+            or base.endswith(".test.ts")
+            or base.endswith(".test.jsx")
+            or base.endswith(".test.tsx")
+            or base.endswith(".spec.js")
+            or base.endswith(".spec.ts")
+            or base.endswith("_test.go")
+            or base.endswith("test.java")
+            or base.endswith("_test.rs")
+            or base.endswith("tests.cs")
             or "/tests/" in norm
             or "/test/" in norm
             or norm.startswith("test_")
@@ -310,10 +318,17 @@ class RegressionTestSelector:
         if not parse_result.entities:
             return tests
 
+        is_in_test_dir = "/test" in parse_result.file_path.replace("\\", "/").lower()
         for ent in parse_result.entities:
             name_lower = ent.name.lower()
             if ent.entity_type in (CodeEntityType.FUNCTION, CodeEntityType.METHOD):
-                if name_lower.startswith("test_") or name_lower.endswith("_test") or name_lower == "test":
+                if (
+                    name_lower.startswith("test")
+                    or name_lower.endswith("test")
+                    or name_lower.startswith("it")
+                    or name_lower.startswith("describe")
+                    or is_in_test_dir
+                ):
                     tests.append(ent)
             elif ent.entity_type == CodeEntityType.CLASS:
                 if name_lower.startswith("test") or name_lower.endswith("test") or name_lower.endswith("testcase"):
@@ -395,7 +410,9 @@ class RegressionTestSelector:
     ) -> List[str]:
         """Correlate test file name with changed source files (e.g. test_billing.py -> app/billing.py)."""
         matches: List[str] = []
-        test_base = test_file.replace("\\", "/").split("/")[-1].replace(".py", "")
+        test_base = test_file.replace("\\", "/").split("/")[-1]
+        if "." in test_base:
+            test_base = test_base.split(".")[0]
         if test_base.startswith("test_"):
             core_name = test_base[5:]
         elif test_base.endswith("_test"):
@@ -404,7 +421,9 @@ class RegressionTestSelector:
             core_name = test_base
 
         for chg_file in changed_files.keys():
-            chg_base = chg_file.replace("\\", "/").split("/")[-1].replace(".py", "")
+            chg_base = chg_file.replace("\\", "/").split("/")[-1]
+            if "." in chg_base:
+                chg_base = chg_base.split(".")[0]
             if core_name == chg_base or core_name.startswith(f"{chg_base}_") or core_name.endswith(f"_{chg_base}"):
                 matches.append(chg_file)
         return matches
@@ -426,7 +445,8 @@ class RegressionTestSelector:
         clean = node_id.replace("entity:", "").replace("file:", "")
         if "::" in clean:
             return clean.split("::")[-1].split(".")[-1]
-        return clean.split("/")[-1].replace(".py", "")
+        base = clean.split("/")[-1]
+        return base.split(".")[0] if "." in base else base
 
     @staticmethod
     def _extract_file_path(node_id: str) -> str:

@@ -558,3 +558,89 @@
 
 
 
+
+
+---
+
+### Entry: 2026-10-21 - Groq Cloud LPU Provider Integration
+
+- **Date**: 2026-10-21
+- **Task**: Integrate Groq Cloud LPU provider for ultra-low-latency semantic PR intent evaluation.
+- **What was implemented**:
+  1. Built `GroqIntentProvider` (`backend/app/intent/providers/groq_provider.py`) using the official `groq` Python SDK.
+  2. Supported models: `llama-3.3-70b-versatile` (default) and `qwen/qwen3.8-27b`.
+  3. Enforced structured JSON output mode with comprehensive schema extraction: `classification` (`EXPLAINED`, `UNEXPLAINED`, `CONTRADICTORY`, `UNCERTAIN`), `confidence`, `reason`, `apparent_purpose`, `evidence`, and `contradiction_signals`.
+  4. Implemented automated secret redaction (`ghp_...`, `gsk_...`, private keys) prior to prompt dispatch.
+  5. Integrated with `FallbackModelProvider` for automatic failover to local TF-IDF if API quota is reached or network disconnects.
+  6. Added `scripts/groq_smoke_test.py` for safe manual verification without leaking tokens.
+  7. Added unit tests in `backend/tests/test_groq_intent_provider.py`.
+
+---
+
+### Entry: 2026-10-22 - Google Gemini API Integration with Schema Validation
+
+- **Date**: 2026-10-22
+- **Task**: Integrate Google Gemini API using the official `google-genai` SDK.
+- **What was implemented**:
+  1. Built `GeminiIntentProvider` (`backend/app/intent/providers/gemini_provider.py`).
+  2. Supported `gemini-2.5-flash` and `gemini-3.8-flash` with structured Pydantic response schemas.
+  3. Automated secret redaction and prompt injection guards treating diff lines strictly as untrusted text.
+  4. Built `scripts/gemini_smoke_test.py` for manual token validation.
+  5. Added unit and integration tests in `backend/tests/test_gemini_intent_provider.py`.
+
+---
+
+### Entry: 2026-10-24 - Universal Multi-Language Tree-sitter Code Parser
+
+- **Date**: 2026-10-24
+- **Task**: Expand code parsing beyond Python to full universal multi-language support.
+- **What was implemented**:
+  1. Created `UniversalCodeParser` (`backend/app/repository/universal_parser.py`) implementing `BaseCodeParser`.
+  2. Integrated native Tree-sitter grammars for 7 core languages:
+     - Python (`tree-sitter-python`)
+     - JavaScript (`tree-sitter-javascript`)
+     - TypeScript & TSX (`tree-sitter-typescript`)
+     - Go (`tree-sitter-go`)
+     - Java (`tree-sitter-java`)
+     - Rust (`tree-sitter-rust`)
+     - C# (`tree-sitter-c-sharp`)
+  3. Implemented a robust generic regex heuristic parser for all other languages (Ruby, PHP, Kotlin, Swift, Dart, Scala, C/C++, Shell).
+  4. Updated `backend/app/analysis/service.py` to route all repository files through `UniversalCodeParser`.
+  5. Enhanced regression test selector (`backend/app/testing/selector.py`) to discover test suites across diverse language frameworks (`.test.js`, `.spec.ts`, `_test.go`, `Test.java`, `Test.cs`, etc.).
+  6. Added unit tests in `backend/tests/test_universal_parser.py` (9 tests passing).
+
+---
+
+### Entry: 2026-10-28 - Interactive SVG DAG Visual Dependency Graph & Dashboard Redesign
+
+- **Date**: 2026-10-28
+- **Task**: Overhaul the local web dashboard with an interactive SVG DAG Dependency Graph, 3-pillar intent summary cards, and risk decoupling.
+- **What was implemented**:
+  1. **3-Pillar Summary Cards**:
+     - Redesigned PR inspection overview to highlight Explained, Unexplained, and Uncertain hunks in a clear 3-card grid.
+     - Added PR description display box directly above hunks for reviewer context.
+     - Added direct "Why [LABEL]: [explanation]" summaries on hunk cards with collapsible "Show more information" drawers.
+  2. **Interactive SVG DAG Visual Dependency Graph**:
+     - Built a dynamic topological 4-column layout (`Changed Files` -> `Modified Entities` -> `Impacted Callers` -> `Test Suites`).
+     - Rendered smooth bezier curves connecting dependent nodes with interactive highlight on hover/click.
+     - Built interactive Node Inspector panel displaying entity type, file path, line range, and downstream callers.
+  3. **Frontend Risk Decoupling**:
+     - Removed legacy `RISK LEVEL` badge and table column from frontend display per user direction, focusing reviewer attention squarely on Intent, Blast Radius, and Regression Tests.
+
+---
+
+### Entry: 2026-10-29 - Regression Test Suite Expansion (151 Passed) & Docs Synchronization
+
+- **Date**: 2026-10-29
+- **Task**: Expand automated test suite across all subsystems and synchronize complete project documentation.
+- **What was implemented**:
+  1. Verified complete regression test suite: **151 tests passed, 0 failures**.
+  2. Synchronized all documentation files in `docs/`:
+     - `PROJECT_OVERVIEW.md`: Updated multi-language parsing, Groq/Gemini AI engines, and modern milestone status.
+     - `ARCHITECTURE.md`: Updated architectural diagrams, component inventory, and directory structures.
+     - `CODE_PARSING.md`: Documented `UniversalCodeParser`, 7 Tree-sitter grammars, and heuristic fallback.
+     - `API.md`: Updated request/response models and monitoring endpoints.
+     - `AI_MODELS.md` & `MODEL_SWITCHING.md`: Documented Groq Cloud LPU, Google Gemini, and TF-IDF configurations.
+     - `DATA_PIPELINE.md`: Updated pipeline stages for multi-language AST extraction and reverse BFS traversal.
+     - `EVALUATION_REPORT.md`: Updated benchmark evaluation metrics and execution safety guardrails.
+     - `DEVELOPMENT_LOG.md`: Documented complete milestone history.

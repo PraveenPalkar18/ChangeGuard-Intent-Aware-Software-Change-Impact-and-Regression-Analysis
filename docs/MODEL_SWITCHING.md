@@ -1,47 +1,65 @@
 # ChangeGuard: Model Switching Guide
 
-> **Objective**: Enable any developer to replace, upgrade, or add an AI model in ChangeGuard without modifying the rest of the application.
+> **Objective**: Enable any developer to configure, switch, or extend AI model providers in ChangeGuard cleanly through configuration or modular code extensions.
 
 ---
 
 ## 1. Quick Switching via Configuration (No Code Changes)
 
-If you are switching between already implemented providers (`tfidf`, `codebert`, `mock`):
+ChangeGuard ships with four built-in model providers:
+- `groq`: Ultra-fast cloud LPU inference using Meta Llama or Qwen models.
+- `gemini`: Hosted Google GenAI LLM using `gemini-2.5-flash` or `gemini-3.8-flash`.
+- `tfidf`: Local deterministic cosine similarity baseline with compound sub-token expansion (100% offline).
+- `mock`: Deterministic token overlap for offline test suites.
 
 ### Step 1: Update `.env`
-Edit your local `.env` file:
-```env
-# Example 1: Use TF-IDF baseline (Default, lightweight)
-AI_PROVIDER=tfidf
-AI_MODEL=tfidf-baseline
+Edit your local `.env` file to select your desired provider:
 
-# Example 2: Use Pretrained CodeBERT
-AI_PROVIDER=codebert
-AI_MODEL=microsoft/codebert-base
+```dotenv
+# Option 1: Groq Cloud LPU (Recommended for production & fast review)
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_your_groq_api_key_here
+AI_MODEL_NAME=llama-3.3-70b-versatile
 
-# Example 3: Use Mock Provider for deterministic offline testing
-AI_PROVIDER=mock
-AI_MODEL=mock-jaccard
+# Option 2: Google Gemini (High reasoning multi-modal LLM)
+# AI_PROVIDER=gemini
+# GEMINI_API_KEY=your_gemini_api_key_here
+# AI_MODEL_NAME=gemini-2.5-flash
+
+# Option 3: Local Deterministic Baseline (Zero network, 100% privacy)
+# AI_PROVIDER=tfidf
+# AI_MODEL_NAME=tfidf-word-v1
+
+# Option 4: Mock Provider (Testing)
+# AI_PROVIDER=mock
+# AI_MODEL_NAME=mock-jaccard
+
+# Universal Fallback Setting (Recommended: true)
+AI_FALLBACK_ENABLED=true
+AI_TIMEOUT_SECONDS=30
 ```
 
-### Step 2: Install Any Required Libraries
-- If switching to `tfidf`: `scikit-learn` and `numpy` are already in `requirements.txt`.
-- If switching to `codebert`:
-  ```powershell
-  .\.venv\Scripts\pip install torch transformers
-  ```
-
-### Step 3: Verify the Model
-Run automated tests to confirm the new model initializes properly:
+### Step 2: Verify Provider Initialization
+Run the automated test suite to confirm your configuration is working:
 ```powershell
-.\.venv\Scripts\pytest backend/tests/test_intent_analyzer.py -v
+pytest backend/tests/test_intent_analyzer.py -v
+```
+
+If using Groq:
+```powershell
+python scripts/groq_smoke_test.py
+```
+
+If using Gemini:
+```powershell
+python scripts/gemini_smoke_test.py
 ```
 
 ---
 
 ## 2. Adding a Completely New Model Provider
 
-To integrate a new model (e.g. `sentence-transformers`, `UniXcoder`, or a local LLM server):
+To integrate a new model (e.g. `ollama`, `anthropic`, `vllm`, or `custom-endpoint`):
 
 ### Step 1: Implement `AIModelProvider`
 Create a new file in `backend/app/intent/providers/my_new_provider.py`:
@@ -50,66 +68,69 @@ Create a new file in `backend/app/intent/providers/my_new_provider.py`:
 from typing import Dict, Any
 from backend.app.intent.provider_interface import AIModelProvider
 
-class MyNewModelProvider(AIModelProvider):
-    def __init__(self, model_name: str = "my-custom-model"):
+class CustomModelProvider(AIModelProvider):
+    def __init__(self, model_name: str = "custom-model"):
         self._model_name = model_name
 
     @property
     def provider_name(self) -> str:
-        return "my_provider"
+        return "custom"
 
     @property
     def model_name(self) -> str:
         return self._model_name
 
     def compute_similarity(self, text_a: str, text_b: str) -> float:
-        """Calculate similarity between text_a (intent) and text_b (code hunk).
-
-        Must return a float between 0.0 and 1.0.
+        """Calculate similarity between stated intent and code hunk.
+        
+        Returns float between 0.0 and 1.0.
         """
-        # Your inference logic here
-        return 0.75
+        if not text_a or not text_b:
+            return 0.0
+        # Custom inference logic
+        return 0.85
 
     def get_model_info(self) -> Dict[str, Any]:
         return {
             "provider": self.provider_name,
             "model": self.model_name,
-            "context_window": "1024 tokens",
-            "hardware_requirements": "CPU / GPU",
+            "latency": "sub-second",
         }
 ```
 
 ### Step 2: Register in `backend/app/intent/factory.py`
-Open `backend/app/intent/factory.py` and register your new provider in `_instantiate_single_provider`:
+Open `backend/app/intent/factory.py` and add your provider to `_instantiate_single_provider`:
 
 ```python
-from backend.app.intent.providers.my_new_provider import MyNewModelProvider
+from backend.app.intent.providers.my_new_provider import CustomModelProvider
 
 def _instantiate_single_provider(provider_key: str, model_name: Optional[str]) -> AIModelProvider:
-    if provider_key == "my_provider":
-        return MyNewModelProvider(model_name=model_name)
+    if provider_key == "custom":
+        return CustomModelProvider(model_name=model_name or "custom-model")
     ...
 ```
 
 ### Step 3: Export in `backend/app/intent/providers/__init__.py`
-Export your new class in `backend/app/intent/providers/__init__.py`.
+Export your provider class in `backend/app/intent/providers/__init__.py`.
 
 ---
 
 ## 3. Expected Interface Contract
 
-Every model provider must adhere to the contract in `backend/app/intent/provider_interface.py`:
+Every model provider must strictly adhere to `AIModelProvider` in `backend/app/intent/provider_interface.py`:
 
 ```python
 class AIModelProvider(ABC):
     @property
     @abstractmethod
     def provider_name(self) -> str:
+        """Unique identifier (e.g. 'groq', 'gemini', 'tfidf')."""
         pass
 
     @property
     @abstractmethod
     def model_name(self) -> str:
+        """Specific model ID (e.g. 'llama-3.3-70b-versatile')."""
         pass
 
     @abstractmethod
@@ -119,19 +140,19 @@ class AIModelProvider(ABC):
 
     @abstractmethod
     def get_model_info(self) -> Dict[str, Any]:
+        """Diagnostic metadata dictionary."""
         pass
 ```
 
 ---
 
-## 4. Verification and Testing Procedure
+## 4. Verification and Safety Checklist
 
-Whenever a model is added or changed, run the following verification checklist:
-
-1. **Empty Input Safety**: Confirm `compute_similarity("", "") == 0.0` without throwing an unhandled exception.
-2. **Boundary Checks**: Confirm return values are strictly in `[0.0, 1.0]`.
-3. **Run Test Suite**:
+Whenever adding or switching models:
+1. **Empty Input Safety**: Confirm `compute_similarity("", "") == 0.0` without raising unhandled exceptions.
+2. **Boundary Checks**: Confirm all similarity outputs stay strictly within `[0.0, 1.0]`.
+3. **Secret Redaction**: Verify sensitive tokens (`ghp_...`, `gsk_...`, private keys) are scrubbed before cloud dispatch.
+4. **Run Full Test Suite**:
    ```powershell
-   .\.venv\Scripts\pytest backend/tests/test_intent_analyzer.py -v
+   pytest backend/tests/test_intent_analyzer.py
    ```
-4. **Update Documentation**: Log the model characteristics in `docs/AI_MODELS.md`.

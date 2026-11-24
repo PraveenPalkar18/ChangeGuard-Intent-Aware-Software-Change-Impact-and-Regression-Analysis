@@ -11,6 +11,7 @@ from backend.app.repository.models import (
 )
 from backend.app.repository.parser_interface import BaseCodeParser
 from backend.app.repository.tree_sitter_parser import TreeSitterPythonParser
+from backend.app.repository.universal_parser import UniversalCodeParser
 from backend.app.repository.entity_mapper import EntityHunkMapper
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "EntityHunkAssociation",
     "BaseCodeParser",
     "TreeSitterPythonParser",
+    "UniversalCodeParser",
     "EntityHunkMapper",
 ]

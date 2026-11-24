@@ -26,6 +26,7 @@ class GitHubClient:
         else:
             # Unauthenticated client - restricted to 60 req/hour
             self._client = Github(timeout=settings.GITHUB_TIMEOUT_SECONDS)
+        self._repo_cache = {}
 
     @property
     def raw_client(self) -> Github:
@@ -43,7 +44,9 @@ class GitHubClient:
         """
         full_repo_name = f"{owner}/{repo}"
         try:
-            repository = self._client.get_repo(full_repo_name)
+            if full_repo_name not in self._repo_cache:
+                self._repo_cache[full_repo_name] = self._client.get_repo(full_repo_name)
+            repository = self._repo_cache[full_repo_name]
             pull_request = repository.get_pull(pr_number)
             return pull_request
         except BadCredentialsException as exc:
@@ -119,7 +122,9 @@ class GitHubClient:
         """
         full_repo_name = f"{owner}/{repo}"
         try:
-            repository = self._client.get_repo(full_repo_name)
+            if full_repo_name not in self._repo_cache:
+                self._repo_cache[full_repo_name] = self._client.get_repo(full_repo_name)
+            repository = self._repo_cache[full_repo_name]
             content_file = repository.get_contents(file_path, ref=ref) if ref else repository.get_contents(file_path)
             if content_file and hasattr(content_file, "decoded_content") and content_file.decoded_content:
                 return content_file.decoded_content.decode("utf-8", errors="replace")
@@ -140,7 +145,9 @@ class GitHubClient:
         """Fetch list of pull requests for a repository with standardized error translation."""
         full_repo_name = f"{owner}/{repo}"
         try:
-            repository = self._client.get_repo(full_repo_name)
+            if full_repo_name not in self._repo_cache:
+                self._repo_cache[full_repo_name] = self._client.get_repo(full_repo_name)
+            repository = self._repo_cache[full_repo_name]
             pulls_paginated = repository.get_pulls(state=state, sort=sort, direction=direction)
             results = []
             for p in pulls_paginated:
@@ -204,7 +211,9 @@ class GitHubClient:
 
         full_repo_name = f"{owner}/{repo}"
         try:
-            repository = self._client.get_repo(full_repo_name)
+            if full_repo_name not in self._repo_cache:
+                self._repo_cache[full_repo_name] = self._client.get_repo(full_repo_name)
+            repository = self._repo_cache[full_repo_name]
             pr = repository.get_pull(pr_number)
             pr.create_issue_comment(comment_body)
             return True

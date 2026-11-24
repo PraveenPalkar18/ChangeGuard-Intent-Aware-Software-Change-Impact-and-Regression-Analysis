@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+*.zip
 .Python
 build/
 develop-eggs/
@@ -64,8 +65,14 @@ yarn-error.log*
 data/
 *.db
 monitoring_state*.json
+scratch/
+finetuning_workspace/
 
-# OS specific
-Thumbs.db
-Desktop.ini
-.DS_Store
+# Fine-tuning workspace large artifacts
+finetuning_workspace/checkpoints/
+finetuning_workspace/models/
+finetuning_workspace/logs/
+*.pt
+*.bin
+*.safetensors
+

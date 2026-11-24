@@ -1,117 +1,128 @@
-# ChangeGuard: AI Models Specification
+# ChangeGuard: AI Models & Semantic Provider Specification
 
 ## 1. Overview
-ChangeGuard requires an AI layer to compare stated developer intent (from Pull Request titles, descriptions, and commit logs) with concrete code modifications (extracted unified diff hunks and Tree-sitter code entities).
+ChangeGuard provides a modular AI intent-analysis layer that evaluates whether code diff hunks align with the stated developer intent from Pull Request titles, descriptions, and commit logs.
 
-Rather than binding the system to a single proprietary LLM or fragile API, ChangeGuard establishes a modular provider abstraction (`AIModelProvider`) with configurable backends and automatic fallback handling.
-
----
-
-## 2. Model Inventory & Current Configuration
-
-| Attribute | Baseline (Current Active) | Pretrained Embedding | Mock (Testing) |
-| :--- | :--- | :--- | :--- |
-| **Model ID** | `tfidf-baseline` | `microsoft/codebert-base` | `mock-jaccard` |
-| **Provider** | `tfidf` | `codebert` | `mock` |
-| **Model Version** | `v1.0.0` (unigram + sub-token expansion) | Hugging Face Transformers (`v1`) | `v1.0.0` |
-| **Model Purpose** | Lexical TF-IDF cosine similarity baseline | Dense contextual token representation | Offline unit test verification |
-| **Input Format** | Natural language text + code representation | Tokenized sequence (max 512 tokens) | Normalized token strings |
-| **Output Format** | Similarity score `[0.0, 1.0]` | Cosine similarity `[0.0, 1.0]` | Jaccard overlap `[0.0, 1.0]` |
-| **Context Window** | Unlimited | 512 subword tokens | Unlimited |
-| **Hardware Reqs** | Low CPU, < 100MB RAM | 8GB RAM, CUDA GPU recommended | Minimal CPU, < 10MB RAM |
-| **Inference Cost** | Free ($0.00 / query) | Free local inference ($0.00) | Free ($0.00) |
-| **API Limits** | None (Local execution) | None (Local weights) | None |
+The architecture decouples the deterministic algorithmic similarity baseline (TF-IDF character/word n-gram cosine similarity) from hosted LLM reasoning layers, supporting:
+1. **Groq Cloud LPU Provider** (Recommended): High-speed LPU inference with Meta's `llama-3.3-70b-versatile` or Qwen's `qwen/qwen3.8-27b`, offering sub-second response times and native JSON schema extraction.
+2. **Google Gemini API Provider**: Hosted multi-modal LLM reasoning with `gemini-2.5-flash` / `gemini-3.8-flash` via official `google-genai` SDK.
+3. **Local Deterministic Baseline**: `tfidf-word-v1` (100% local, zero external network dependency, compound identifier sub-token expansion).
+4. **Mock Provider**: Offline deterministic token-overlap provider for automated test suites.
 
 ---
 
-## 3. Environment Variables & Model Selection
-Model selection is decoupled from business logic and governed entirely by environment variables or application configuration:
+## 2. Model & Provider Inventory
 
-```env
-# AI Intent Engine Configuration
-AI_PROVIDER=tfidf
-AI_MODEL=tfidf-baseline
-AI_API_KEY=
+| Provider Key | Primary Model ID | Architecture / SDK | Purpose | Inference Latency | Network Dependency |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`groq`** (Recommended) | `llama-3.3-70b-versatile` | Groq Python SDK (`groq`) | Ultra-fast LPU inference, structured intent classification | ~250ms | Groq Cloud REST API |
+| **`gemini`** | `gemini-2.5-flash` | Google GenAI SDK (`google-genai`) | Multi-modal reasoning with JSON schema | ~1200ms | Google AI Studio REST API |
+| **`tfidf`** (Default fallback) | `tfidf-word-v1` | scikit-learn TF-IDF + Heuristic AST Rules | Local deterministic baseline & guaranteed offline fallback | ~5ms | None (100% Local) |
+| **`mock`** | `mock-jaccard` | In-memory token overlap | Offline automated unit/integration testing | <1ms | None |
+
+---
+
+## 3. Groq Cloud LPU Integration Guide (Recommended)
+
+ChangeGuard natively integrates with **Groq Cloud API** leveraging high-speed Language Processing Unit (LPU) hardware for ultra-low latency pull request intent analysis.
+
+### 3.1 Supported Models
+- **`llama-3.3-70b-versatile`** (Default / Recommended): Meta's 70B parameter model with 128k context, strong code comprehension, and native JSON mode.
+- **`qwen/qwen3.8-27b`**: High reasoning density model optimized for technical analysis.
+- **`llama-3.1-8b-instant`**: 8B parameter model tracking ~560 tokens/second, optimized for rapid turnaround.
+
+### 3.2 Obtaining a Free Groq API Key
+1. Navigate to the **Groq Console**: [https://console.groq.com/](https://console.groq.com/)
+2. Sign up or log in.
+3. Go to **API Keys**: [https://console.groq.com/keys](https://console.groq.com/keys)
+4. Click **Create API Key**.
+5. Copy the generated key (starts with `gsk_...`).
+
+### 3.3 Configuring Environment Variables
+Add the following to your local `.env` file (never commit `.env` to Git):
+```dotenv
+AI_PROVIDER=groq
+GROQ_API_KEY=gsk_your_actual_key_here
+AI_MODEL_NAME=llama-3.3-70b-versatile
+AI_TIMEOUT_SECONDS=30
+AI_MAX_OUTPUT_TOKENS=2048
+AI_FALLBACK_ENABLED=true
+AI_CACHE_ENABLED=true
 ```
 
-To enable the CodeBERT provider:
-```env
-AI_PROVIDER=codebert
-AI_MODEL=microsoft/codebert-base
+Or configure temporarily in PowerShell:
+```powershell
+$env:AI_PROVIDER="groq"
+$env:GROQ_API_KEY="gsk_your_actual_key_here"
+$env:AI_MODEL_NAME="llama-3.3-70b-versatile"
+```
+
+### 3.4 Verification Smoke Test
+ChangeGuard includes a dedicated smoke test that verifies real Groq API connectivity without leaking tokens:
+```powershell
+python scripts/groq_smoke_test.py
+```
+- Displays masked key (e.g. `gsk_...abcd`).
+- Tests real structured JSON intent classification.
+- Exits 0 on success, 1 on failure or unconfigured key.
+
+---
+
+## 4. Google Gemini API Integration Guide
+
+### 4.1 Obtaining a Gemini API Key
+1. Navigate to **Google AI Studio**: [https://aistudio.google.com/](https://aistudio.google.com/)
+2. Sign in with your Google account.
+3. Click **Get API key** $\rightarrow$ **Create API key**.
+4. Copy the generated key (e.g. `AQ...` or `AIza...`).
+
+### 4.2 Configuring Environment Variables
+Add to your local `.env` file:
+```dotenv
+AI_PROVIDER=gemini
+AI_MODEL_NAME=gemini-2.5-flash
+GEMINI_API_KEY=your_actual_gemini_api_key_here
+AI_TIMEOUT_SECONDS=30
+AI_MAX_OUTPUT_TOKENS=2048
+AI_FALLBACK_ENABLED=true
+AI_CACHE_ENABLED=true
+```
+
+### 4.3 Verification Smoke Test
+```powershell
+python scripts/gemini_smoke_test.py
 ```
 
 ---
 
-## 4. Input & Output Contract
+## 5. Local Deterministic TF-IDF Baseline Engine
 
-### Input Format
-The `IntentAnalyzer` constructs two inputs for the provider:
-1. **PR Intent (`PRContext.full_intent_text`)**:
-   ```
-   "Fix invalid discount rate crash. Adds validation check for discount rate parameters in billing logic."
-   ```
-2. **Code Representation (`HunkContext.code_representation`)**:
-   ```
-   "function calculate_discount Compute discount with rate validation. price rate if rate < 0 or rate > 1: raise ValueError return price * (1 - rate)"
-   ```
-
-### Output Format
-The provider outputs a float `similarity_score` in `[0.0, 1.0]`. The `IntentAnalyzer` translates this score into a structured `HunkIntentResult`:
-```json
-{
-  "hunk_index": 0,
-  "file_path": "app/billing.py",
-  "classification": "EXPLAINED",
-  "confidence": 0.82,
-  "similarity_score": 0.4851,
-  "reason": "Change in 'app/billing.py' shows strong semantic alignment with the stated PR intent. Direct reference to symbol 'calculate_discount' confirmed.",
-  "evidence": [
-    "Entity 'calculate_discount' is explicitly referenced in the PR intent text.",
-    "Model similarity score: 0.4851 (thresholds: explained >= 0.20, unexplained < 0.05)"
-  ],
-  "limitations": [
-    "Semantic similarity alone does not constitute mathematical proof of intent alignment.",
-    "Static analysis cannot detect dynamic runtime or indirect call linkages."
-  ],
-  "model_used": "tfidf-baseline",
-  "provider_used": "tfidf"
-}
-```
+When no external API key is provided or when offline, ChangeGuard uses `TFIDFSimilarityProvider`:
+1. **Compound Identifier Splitting**: Extracts sub-tokens from `camelCase` (e.g. `getUserProfile` $\rightarrow$ `get`, `user`, `profile`) and `snake_case` (e.g. `auth_token_refresh` $\rightarrow$ `auth`, `token`, `refresh`).
+2. **Sub-Token Cosine Vectorization**: Calculates term-frequency inverse-document-frequency vectors between stated PR intent text and modified diff lines.
+3. **Deterministic Classification Rules**:
+   - $\text{Cosine Similarity} \ge 0.40$ or direct entity keyword match $\rightarrow$ `EXPLAINED`.
+   - $\text{Cosine Similarity} \le 0.15$ with no lexical overlap $\rightarrow$ `UNEXPLAINED`.
+   - $0.15 < \text{Cosine Similarity} < 0.40$ or empty PR body $\rightarrow$ `UNCERTAIN`.
 
 ---
 
-## 5. Classification Logic & Thresholds
+## 6. Security, Privacy & Free-Tier Guardrails
 
-ChangeGuard enforces three distinct classification states:
-- **`EXPLAINED`** (`similarity >= 0.20` or direct identifier match):
-  The hunk contains symbols or concepts directly stated in the PR title, body, or commits.
-- **`UNCERTAIN`** (`0.05 <= similarity < 0.20`, or missing PR description):
-  Crucial architectural safeguard: **Semantic similarity alone must NOT be treated as proof of an unexplained change.** A legitimate refactor or cross-component change may have low lexical overlap. When in doubt, the engine classifies as `UNCERTAIN` to prompt reviewer inspection rather than falsely raising alarms.
-- **`UNEXPLAINED`** (`similarity < 0.05` with no identifier matches, no commit linkages, and not a test file):
-  The change exhibits zero detectable semantic or symbol correlation with the stated intent.
+### 6.1 Automated Secret Redaction
+Before any diff text or commit log is transmitted to external AI endpoints, `redact_sensitive_tokens()` scans the input for credentials:
+- GitHub tokens (`ghp_...`, `github_pat_...`)
+- Groq API keys (`gsk_...`)
+- Google API keys (`AIza...`, `AQ....`)
+- Generic bearer tokens (`bearer ...`, `sk-...`)
+- Private RSA / EC cryptographic keys (`-----BEGIN PRIVATE KEY-----`)
 
----
+Matches are replaced with `[REDACTED_SECRET]` to prevent token leakage.
 
-## 6. Pretrained Model Evaluation (CodeBERT & UniXcoder)
+### 6.2 Prompt Injection Defense
+Diffs and PR descriptions are treated strictly as untrusted data within system prompts. Prompts explicitly prohibit executable instructions found in diff lines from overriding classification logic.
 
-### Evaluation Analysis
-- **CodeBERT (`microsoft/codebert-base`)**:
-  - Pretrained on CodeSearchNet across 6 programming languages including Python.
-  - Generates dense 768-dimensional contextual embeddings using RoBERTa architecture.
-  - **Advantage**: Better captures semantic synonyms (e.g. associating "remove" with `del` or `.pop()`).
-  - **Limitation**: 512 token truncation window limits large multi-line hunks; requires PyTorch (~2GB disk) and slower CPU inference (~150ms vs ~2ms for TF-IDF).
-- **UniXcoder (`microsoft/unixcoder-base`)**:
-  - Unified cross-modal pretraining utilizing AST structure.
-  - Similar trade-offs to CodeBERT.
-
----
-
-## 7. Model Fallback Mechanism
-
-If the primary configured provider fails (e.g. Hugging Face weights unavailable or CUDA out of memory), the `FallbackModelProvider` automatically diverts inference to the local secondary provider (e.g. `tfidf`) and logs a diagnostic warning. It **never silently fabricates artificial results**.
-
----
-
-## 8. Limitations & Future Work
-1. **Context Window**: Transformer models truncate after 512 tokens. Future milestones will implement sliding-window hunk chunking.
-2. **Fine-Tuning**: Pretrained models are zero-shot evaluators. Fine-tuning on labeled commit-PR datasets will be explored in future evaluation milestones once ground truth datasets are established.
+### 6.3 Resilient Fallback Architecture
+When `AI_FALLBACK_ENABLED=true`:
+- If an external provider experiences network failure, timeout, quota exhaustion (HTTP 429), or invalid credentials, `FallbackModelProvider` transparently falls back to local `tfidf`.
+- The analysis result documents the fallback in `processing_limitations` without crashing the application.

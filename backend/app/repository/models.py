@@ -30,6 +30,7 @@ class CodeEntity(BaseModel):
     docstring: Optional[str] = Field(default=None, description="Extracted docstring if present")
     parameters: List[str] = Field(default_factory=list, description="List of parameter names")
     decorators: List[str] = Field(default_factory=list, description="List of applied decorator names")
+    base_classes: List[str] = Field(default_factory=list, description="Base classes inherited by class")
     is_async: bool = Field(default=False, description="True if asynchronous function or method")
 
 

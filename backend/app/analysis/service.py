@@ -3,6 +3,7 @@ from typing import List, Optional, Dict
 from backend.app.github.client import GitHubClient
 from backend.app.github.importer import GitHubPRImporter
 from backend.app.preprocessing.diff_parser import parse_patch
+from backend.app.repository.universal_parser import UniversalCodeParser
 from backend.app.repository.tree_sitter_parser import TreeSitterPythonParser
 from backend.app.repository.entity_mapper import EntityHunkMapper
 from backend.app.repository.models import ParseResult
@@ -31,7 +32,7 @@ class ChangeGuardAnalysisService:
         importer: Optional[GitHubPRImporter] = None,
         github_client: Optional[GitHubClient] = None,
         intent_analyzer: Optional[IntentAnalyzer] = None,
-        code_parser: Optional[TreeSitterPythonParser] = None,
+        code_parser=None,
         graph_builder: Optional[ChangeGraphBuilder] = None,
         risk_analyzer: Optional[RiskAnalyzer] = None,
         test_selector: Optional[RegressionTestSelector] = None,
@@ -39,7 +40,7 @@ class ChangeGuardAnalysisService:
         self._importer = importer or GitHubPRImporter()
         self._github_client = github_client or GitHubClient()
         self._custom_intent_analyzer = intent_analyzer
-        self._code_parser = code_parser or TreeSitterPythonParser()
+        self._code_parser = code_parser or UniversalCodeParser()
         self._custom_graph_builder = graph_builder
         self._custom_risk_analyzer = risk_analyzer
         self._custom_test_selector = test_selector
@@ -93,6 +94,7 @@ class ChangeGuardAnalysisService:
         total_hunks_analyzed = 0
         explained_count = 0
         unexplained_count = 0
+        contradictory_count = 0
         uncertain_count = 0
 
         # Change & Dependency Graph inputs (Milestone 5)
@@ -130,9 +132,9 @@ class ChangeGuardAnalysisService:
             old_parse_result: Optional[ParseResult] = None
             source_available = False
 
-            is_python_file = f.filename.endswith(".py")
+            is_parseable_file = self._code_parser.supports_language(f.filename)
 
-            if fetch_source_files and is_python_file:
+            if fetch_source_files and is_parseable_file:
                 # Attempt to fetch new source at head SHA/branch
                 ref_head = pr_details.head_sha or pr_details.head_branch
                 new_source = self._github_client.get_file_content(owner, repo, f.filename, ref=ref_head)
@@ -146,12 +148,12 @@ class ChangeGuardAnalysisService:
                 old_source = self._github_client.get_file_content(owner, repo, old_filename, ref=ref_base)
                 if old_source is not None:
                     old_parse_result = self._code_parser.parse_source(old_filename, old_source)
-            elif not is_python_file:
-                file_limitations.append("Non-Python source file; AST entity extraction skipped.")
+            elif not is_parseable_file:
+                file_limitations.append("Non-Python or non-code file; AST entity extraction skipped.")
             else:
                 file_limitations.append("Full source fetching disabled; AST entity extraction skipped.")
 
-            if is_python_file and not source_available and fetch_source_files:
+            if is_parseable_file and not source_available and fetch_source_files:
                 file_limitations.append("Full repository source could not be retrieved from GitHub API; entity mapping limited to diff hunk line ranges.")
 
             parsed_files_map[f.filename] = new_parse_result
@@ -206,6 +208,8 @@ class ChangeGuardAnalysisService:
                     explained_count += 1
                 elif intent_res.classification == IntentClassification.UNEXPLAINED:
                     unexplained_count += 1
+                elif intent_res.classification == IntentClassification.CONTRADICTORY:
+                    contradictory_count += 1
                 else:
                     uncertain_count += 1
                 total_hunks_analyzed += 1
@@ -230,6 +234,10 @@ class ChangeGuardAnalysisService:
                         limitations=intent_res.limitations,
                         model_used=intent_res.model_used,
                         provider_used=intent_res.provider_used,
+                        apparent_purpose=intent_res.apparent_purpose,
+                        contradiction_signals=intent_res.contradiction_signals,
+                        missing_context=intent_res.missing_context,
+                        uncertainty_score=intent_res.uncertainty_score,
                     )
                 )
 
@@ -249,6 +257,11 @@ class ChangeGuardAnalysisService:
         # 7. Construct overall summary
         if total_hunks_analyzed == 0:
             summary = "No diff hunks available to analyze in this Pull Request."
+        elif contradictory_count > 0:
+            summary = (
+                f"Warning: {contradictory_count} of {total_hunks_analyzed} hunks contain changes that conflict with "
+                f"the stated PR intent and warrant immediate inspection."
+            )
         elif unexplained_count == 0 and uncertain_count == 0:
             summary = f"All {total_hunks_analyzed} hunks are explained by the stated PR intent."
         elif unexplained_count > 0:
@@ -293,13 +306,15 @@ class ChangeGuardAnalysisService:
         # Attempt to discover candidate test files for changed components if source fetching is enabled
         if fetch_source_files:
             ref_head = pr_details.head_sha or pr_details.head_branch
-            for f_path in parsed_files_map.keys():
-                if f_path.endswith(".py") and not RegressionTestSelector._is_test_file(f_path):
-                    base_name = f_path.replace("\\", "/").split("/")[-1].replace(".py", "")
+            for f_path in list(parsed_files_map.keys()):
+                if not RegressionTestSelector._is_test_file(f_path):
+                    filename_only = f_path.replace("\\", "/").split("/")[-1]
+                    parts = filename_only.split(".")
+                    base_name = parts[0]
+                    ext = f".{parts[-1]}" if len(parts) > 1 else ""
                     candidates = [
-                        f"tests/test_{base_name}.py",
-                        f"tests/{base_name}_test.py",
-                        f"test_{base_name}.py",
+                        f"tests/test_{base_name}{ext}",
+                        f"test/{base_name}.test{ext}",
                     ]
                     for cand in candidates:
                         if cand not in test_parse_results:
@@ -326,12 +341,21 @@ class ChangeGuardAnalysisService:
             state=pr_details.state,
             base_branch=pr_details.base_branch,
             head_branch=pr_details.head_branch,
-            ai_provider=active_analyzer.provider.provider_name,
-            ai_model=active_analyzer.provider.model_name,
+            ai_provider=(
+                f"{active_analyzer.provider.provider_name} + {active_analyzer.semantic_engine.provider_type}"
+                if active_analyzer.semantic_engine.provider_type not in ("deterministic", "tfidf")
+                else active_analyzer.provider.provider_name
+            ),
+            ai_model=(
+                f"{active_analyzer.provider.model_name} + {active_analyzer.semantic_engine.model_name}"
+                if active_analyzer.semantic_engine.provider_type not in ("deterministic", "tfidf")
+                else active_analyzer.provider.model_name
+            ),
             total_files_analyzed=len(file_reports),
             total_hunks_analyzed=total_hunks_analyzed,
             explained_count=explained_count,
             unexplained_count=unexplained_count,
+            contradictory_count=contradictory_count,
             uncertain_count=uncertain_count,
             overall_intent_summary=summary,
             files=file_reports,

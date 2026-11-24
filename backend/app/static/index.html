@@ -6,75 +6,142 @@
   <title>ChangeGuard — Intent-Aware Change Impact & Regression Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0d1117;
-      --card-bg: #161b22;
-      --card-border: #30363d;
-      --text-main: #f0f6fc;
-      --text-muted: #8b949e;
-      --accent: #58a6ff;
-      --accent-hover: #79c0ff;
-      --success: #3fb950;
-      --warning: #d29922;
-      --danger: #f85149;
-      --purple: #bc8cff;
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      --font-mono: 'JetBrains Mono', monospace;
+      --bg-canvas: #f8fafc;
+      --bg-surface: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --bg-card-header: #f8fafc;
+      --border-subtle: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --brand-primary: #2563eb;
+      --brand-hover: #1d4ed8;
+      --brand-subtle: #eff6ff;
+      --brand-border: #bfdbfe;
+      --brand-text: #1e40af;
+      --success-bg: #f0fdf4;
+      --success-text: #166534;
+      --success-border: #bbf7d0;
+      --warning-bg: #fffbeb;
+      --warning-text: #92400e;
+      --warning-border: #fde68a;
+      --danger-bg: #fef2f2;
+      --danger-text: #991b1b;
+      --danger-border: #fecaca;
+      --neutral-badge-bg: #f1f5f9;
+      --neutral-badge-text: #475569;
+      --neutral-badge-border: #e2e8f0;
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, Menlo, monospace;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      background: var(--bg);
-      color: var(--text-main);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
       font-family: var(--font-sans);
-      line-height: 1.5;
       font-size: 14px;
-      padding: 0;
-      margin: 0;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* Top Navigation Header */
     header {
-      background: rgba(22, 27, 34, 0.85);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid var(--card-border);
-      padding: 16px 28px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       position: sticky;
       top: 0;
       z-index: 100;
+      box-shadow: var(--shadow-sm);
     }
-    .logo-area { display: flex; align-items: center; gap: 12px; }
-    .logo-badge {
-      background: linear-gradient(135deg, #1f6feb, #8957e5);
-      color: #fff;
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #ffffff;
       padding: 6px 10px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       font-weight: 700;
       font-size: 14px;
-      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: -0.2px;
     }
-    .title-group h1 { font-size: 18px; font-weight: 600; }
-    .title-group p { font-size: 12px; color: var(--text-muted); }
-    .header-actions { display: flex; align-items: center; gap: 12px; }
+
+    .brand-title h1 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.3px;
+    }
+
+    .brand-title p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 20px;
+      gap: 8px;
+      padding: 5px 12px;
+      border-radius: var(--radius-full);
       font-size: 12px;
       font-weight: 500;
-      background: #21262d;
-      border: 1px solid var(--card-border);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
     }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-    .status-dot.active { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .status-dot.idle { background: var(--warning); }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .status-dot.active {
+      background: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+    }
+
+    .status-dot.idle {
+      background: #d97706;
+    }
+
+    /* Buttons */
     .btn {
       padding: 7px 14px;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 500;
       cursor: pointer;
@@ -84,171 +151,828 @@
       gap: 6px;
       transition: all 0.15s ease;
       font-family: inherit;
+      text-decoration: none;
     }
-    .btn-primary { background: #238636; color: #fff; }
-    .btn-primary:hover { background: #2ea043; }
-    .btn-secondary { background: #21262d; color: var(--text-main); border-color: var(--card-border); }
-    .btn-secondary:hover { background: #30363d; border-color: #8b949e; }
-    .btn-danger { background: rgba(248, 81, 73, 0.15); color: var(--danger); border-color: rgba(248, 81, 73, 0.4); }
-    .btn-danger:hover { background: rgba(248, 81, 73, 0.25); }
-    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
-    .grid-dashboard { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
-    @media (max-width: 960px) { .grid-dashboard { grid-template-columns: 1fr; } }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--brand-primary);
+      color: #ffffff;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: var(--brand-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border-color: var(--border-subtle);
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--bg-subtle);
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    .btn-danger {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
+    }
+    .btn-danger:hover:not(:disabled) {
+      background: #fee2e2;
+    }
+
+    .btn-outline-brand {
+      background: var(--brand-subtle);
+      color: var(--brand-text);
+      border-color: var(--brand-border);
+    }
+    .btn-outline-brand:hover:not(:disabled) {
+      background: #dbeafe;
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1340px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Banner Messages */
+    #status-banner {
+      display: none;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .badge-completed, .badge-explained, .badge-low, .badge-confirmed {
+      background: var(--success-bg);
+      color: var(--success-text);
+      border-color: var(--success-border);
+    }
+
+    .badge-running, .badge-inferred {
+      background: var(--brand-subtle);
+      color: var(--brand-text);
+      border-color: var(--brand-border);
+    }
+
+    .badge-pending, .badge-uncertain, .badge-medium {
+      background: var(--warning-bg);
+      color: var(--warning-text);
+      border-color: var(--warning-border);
+    }
+
+    .badge-failed, .badge-contradictory, .badge-high {
+      background: var(--danger-bg);
+      color: var(--danger-text);
+      border-color: var(--danger-border);
+    }
+
+    .badge-unexplained {
+      background: #fff1f2;
+      color: #be123c;
+      border-color: #fecdd3;
+    }
+
+    .badge-neutral {
+      background: var(--neutral-badge-bg);
+      color: var(--neutral-badge-text);
+      border-color: var(--neutral-badge-border);
+    }
+
+    /* Cards */
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 18px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
       margin-bottom: 20px;
     }
-    .card-title {
+
+    .card-header-title {
       font-size: 14px;
       font-weight: 600;
+      color: var(--text-primary);
       margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      color: var(--text-main);
     }
-    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 14px; }
-    .stat-box {
-      background: #0d1117;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #21262d;
-    }
-    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .stat-val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+    /* Form Inputs */
     .input-field {
       width: 100%;
       padding: 8px 12px;
-      background: #0d1117;
-      border: 1px solid var(--card-border);
-      border-radius: 6px;
-      color: var(--text-main);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
       font-size: 13px;
       margin-bottom: 10px;
       font-family: inherit;
     }
-    .input-field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.2); }
+
+    .input-field:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    /* Code Tags */
+    .code-tag {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-subtle);
+      color: var(--brand-text);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* ============================================================
+       VIEW 1: OVERVIEW & MONITORING DASHBOARD
+       ============================================================ */
+    .grid-dashboard {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 980px) {
+      .grid-dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-grid-worker {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .stat-box-worker {
+      background: var(--bg-subtle);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .stat-box-worker .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-box-worker .stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+      color: var(--text-primary);
+    }
+
     .repo-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 10px;
-      border-radius: 6px;
-      background: #0d1117;
-      border: 1px solid #21262d;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
       margin-bottom: 8px;
       font-family: var(--font-mono);
       font-size: 12px;
     }
-    .pr-table { width: 100%; border-collapse: collapse; }
-    .pr-table th, .pr-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--card-border); }
-    .pr-table th { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
-    .pr-table tr:hover { background: rgba(88, 166, 255, 0.04); cursor: pointer; }
-    .badge {
-      display: inline-block;
-      padding: 3px 8px;
-      border-radius: 12px;
+
+    .pr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .pr-table th, .pr-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .pr-table th {
       font-size: 11px;
+      color: var(--text-muted);
       font-weight: 600;
       text-transform: uppercase;
-      font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+      background: var(--bg-subtle);
     }
-    .badge-completed { background: rgba(63, 185, 80, 0.15); color: var(--success); border: 1px solid rgba(63, 185, 80, 0.3); }
-    .badge-running { background: rgba(88, 166, 255, 0.15); color: var(--accent); border: 1px solid rgba(88, 166, 255, 0.3); }
-    .badge-pending { background: rgba(210, 153, 34, 0.15); color: var(--warning); border: 1px solid rgba(210, 153, 34, 0.3); }
-    .badge-failed { background: rgba(248, 81, 73, 0.15); color: var(--danger); border: 1px solid rgba(248, 81, 73, 0.3); }
-    .badge-high { background: rgba(248, 81, 73, 0.18); color: #ff7b72; border: 1px solid rgba(248, 81, 73, 0.4); }
-    .badge-medium { background: rgba(210, 153, 34, 0.18); color: #e3b341; border: 1px solid rgba(210, 153, 34, 0.4); }
-    .badge-low { background: rgba(63, 185, 80, 0.18); color: #56d364; border: 1px solid rgba(63, 185, 80, 0.4); }
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(1, 4, 9, 0.75);
-      backdrop-filter: blur(4px);
+
+    .pr-table tr:hover td {
+      background: #f8fafc;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ============================================================
+       VIEW 2: PR ANALYSIS REPORT (CLEAN, SUMMARY-FIRST REDESIGN)
+       ============================================================ */
+    #view-pr-report {
       display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 200;
-      padding: 20px;
     }
-    .modal {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      width: 100%;
-      max-width: 1100px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-header {
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--card-border);
+
+    /* Top Breadcrumb & Return Bar */
+    .report-nav-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      position: sticky;
-      top: 0;
-      background: var(--card-bg);
-      z-index: 10;
+      margin-bottom: 16px;
     }
-    .modal-body { padding: 24px; }
-    .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px; }
-    .tab-btn {
-      padding: 8px 16px;
-      background: none;
-      border: none;
+
+    /* Compact PR Header Card */
+    .pr-header-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .pr-header-main {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pr-header-coords {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
       color: var(--text-muted);
-      cursor: pointer;
-      font-weight: 500;
-      border-bottom: 2px solid transparent;
-      font-family: inherit;
+    }
+
+    .pr-header-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      letter-spacing: -0.3px;
+    }
+
+    .pr-header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .pr-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Sanitized AI Fallback Banner */
+    .ai-fallback-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #92400e;
       font-size: 13px;
     }
-    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .hunk-card {
-      background: #0d1117;
-      border: 1px solid var(--card-border);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .code-tag {
+
+    .ai-fallback-details {
+      background: #ffffff;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin-top: 10px;
       font-family: var(--font-mono);
       font-size: 11px;
-      background: #21262d;
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: #79c0ff;
+      color: #78350f;
+      white-space: pre-wrap;
+      word-break: break-word;
+      display: none;
     }
-    .notice {
-      padding: 12px 16px;
-      border-radius: 8px;
-      background: rgba(88, 166, 255, 0.1);
-      border: 1px solid rgba(88, 166, 255, 0.3);
-      color: var(--text-main);
+
+    /* Overall Result Card */
+    .overall-result-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
       margin-bottom: 16px;
-      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
-    .empty-state { text-align: center; padding: 48px 16px; color: var(--text-muted); }
+
+    .overall-result-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .overall-intent-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .overall-intent-heading h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .overall-explanation-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .overall-action-box {
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--brand-primary);
+      padding: 10px 14px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .classification-count-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Four Compact Analysis Cards Grid */
+    .summary-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .summary-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 600px) {
+      .summary-cards-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .summary-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+
+    .summary-card:hover {
+      border-color: var(--brand-border);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .summary-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .summary-card-title {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .summary-card-metric {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .summary-card-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 12px;
+    }
+
+    .summary-card-action {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brand-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Details Navigation Toolbar */
+    .details-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .details-jump-nav {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .jump-btn {
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .jump-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    .jump-btn.active {
+      background: var(--brand-subtle);
+      color: var(--brand-text);
+      border-color: var(--brand-border);
+    }
+
+    /* Expandable Detail Section */
+    .detail-section {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      transition: border-color 0.15s ease;
+    }
+
+    .detail-section.expanded {
+      border-color: #cbd5e1;
+    }
+
+    .detail-header {
+      padding: 14px 18px;
+      background: var(--bg-surface);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+
+    .detail-header:hover {
+      background: #f8fafc;
+    }
+
+    .detail-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .detail-header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .detail-header-summary {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 6px;
+    }
+
+    .detail-chevron {
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: transform 0.2s ease;
+    }
+
+    .detail-section.expanded .detail-chevron {
+      transform: rotate(180deg);
+    }
+
+    .detail-body {
+      padding: 18px;
+      border-top: 1px solid var(--border-subtle);
+      background: #ffffff;
+      display: none;
+    }
+
+    .detail-section.expanded .detail-body {
+      display: block;
+    }
+
+    /* Hunk Accordion */
+    .hunk-accordion-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .hunk-header {
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .hunk-header:hover {
+      background: #e2e8f0;
+    }
+
+    .hunk-details-body {
+      padding: 14px;
+      border-top: 1px solid var(--border-subtle);
+      display: none;
+    }
+
+    .hunk-accordion-item.open .hunk-details-body {
+      display: block;
+    }
+
+    /* Risk Factor Cards */
+    .risk-factor-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    /* Test Cards */
+    .test-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .command-box {
+      background: #0f172a;
+      color: #93c5fd;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .copy-cmd-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .copy-cmd-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* PR Description Box in Header */
+    .pr-description-box {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--brand-primary);
+      width: 100%;
+    }
+    .pr-description-label {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .pr-description-body {
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Redesigned Hunk Cards (Label & Explanation First) */
+    .hunk-item-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .hunk-item-card:hover {
+      border-color: var(--border-strong);
+    }
+    .hunk-item-header {
+      padding: 10px 14px;
+      background: var(--bg-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .hunk-item-main {
+      padding: 14px 16px;
+    }
+    .hunk-reason-display {
+      background: #ffffff;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--brand-primary);
+    }
+    .hunk-reason-label {
+      font-weight: 600;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .hunk-reason-text {
+      font-size: 13px;
+      color: var(--text-primary);
+      line-height: 1.55;
+    }
+    .hunk-tech-details {
+      padding: 14px 16px;
+      background: var(--bg-subtle);
+      border-top: 1px dashed var(--border-subtle);
+    }
+
+    /* Graph Visualizer Styles */
+    .graph-view-switcher {
+      display: inline-flex;
+      background: var(--bg-subtle);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      gap: 4px;
+    }
+    .graph-view-btn {
+      padding: 6px 14px;
+      font-size: 12px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+    }
+    .graph-view-btn.active {
+      background: var(--brand-primary);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+    .graph-svg-container {
+      width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #fafbfc;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .graph-node-g {
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .graph-node-g:hover {
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.12));
+    }
+    .graph-edge-path {
+      transition: stroke-width 0.15s ease, opacity 0.15s ease;
+    }
+    .graph-node-inspector {
+      background: #ffffff;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-md);
+    }
   </style>
 </head>
 <body>
 
 <header>
-  <div class="logo-area">
-    <div class="logo-badge">🛡️ ChangeGuard</div>
-    <div class="title-group">
+  <div class="brand-group" onclick="showOverviewView()">
+    <div class="brand-badge">🛡️ ChangeGuard</div>
+    <div class="brand-title">
       <h1>Change Impact & Regression Analysis</h1>
-      <p>Local Monitoring & Explainable Regression Engine</p>
+      <p>Intent-Aware Code Quality & Regression Engine</p>
     </div>
   </div>
-  <div class="header-actions">
+  <div class="header-controls">
     <div class="status-pill">
       <span class="status-dot" id="worker-status-dot"></span>
       <span id="worker-status-text">Checking worker...</span>
@@ -259,123 +983,365 @@
 </header>
 
 <div class="container">
-  <div id="status-banner" style="display:none; margin-bottom: 16px; padding: 10px 14px; border-radius: 6px; font-size: 13px;"></div>
-  <div class="grid-dashboard">
-    <!-- Left Column: Repositories & Worker Stats -->
-    <aside>
-      <div class="card">
-        <div class="card-title">Worker Activity</div>
-        <div class="stat-grid">
-          <div class="stat-box">
-            <div class="stat-label">Tracked PRs</div>
-            <div class="stat-val" id="stat-total-prs">0</div>
+  <div id="status-banner"></div>
+
+  <!-- ============================================================
+       VIEW 1: DASHBOARD OVERVIEW & MONITORED PRS
+       ============================================================ -->
+  <div id="view-dashboard-overview">
+    <div class="grid-dashboard">
+      <!-- Left Column: Repositories & Worker Stats -->
+      <aside>
+        <div class="card">
+          <div class="card-header-title">Worker Activity</div>
+          <div class="stat-grid-worker">
+            <div class="stat-box-worker">
+              <div class="stat-label">Tracked PRs</div>
+              <div class="stat-val" id="stat-total-prs">0</div>
+            </div>
+            <div class="stat-box-worker">
+              <div class="stat-label">Completed</div>
+              <div class="stat-val" style="color: var(--success-text);" id="stat-completed-prs">0</div>
+            </div>
+            <div class="stat-box-worker">
+              <div class="stat-label">Pending / Run</div>
+              <div class="stat-val" style="color: var(--brand-primary);" id="stat-pending-prs">0</div>
+            </div>
+            <div class="stat-box-worker">
+              <div class="stat-label">Failed</div>
+              <div class="stat-val" style="color: var(--danger-text);" id="stat-failed-prs">0</div>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-label">Completed</div>
-            <div class="stat-val" style="color: var(--success);" id="stat-completed-prs">0</div>
+          <p style="font-size: 11px; color: var(--text-muted);" id="stat-poll-info">Poll interval: 60s</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header-title">Monitored Repositories</div>
+          <div id="repo-list">
+            <p style="color: var(--text-muted); font-size: 12px;">No repositories configured.</p>
           </div>
-          <div class="stat-box">
-            <div class="stat-label">Pending / Run</div>
-            <div class="stat-val" style="color: var(--accent);" id="stat-pending-prs">0</div>
+
+          <form id="add-repo-form" onsubmit="addRepository(event)" style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+            <input type="text" id="input-owner" class="input-field" placeholder="Owner / Org (e.g. pallets)" required>
+            <input type="text" id="input-repo" class="input-field" placeholder="Repository (e.g. flask)" required>
+            <button type="submit" class="btn btn-secondary" style="width: 100%;">+ Add Repository</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-header-title">Quick Direct PR Analysis</div>
+          <form onsubmit="runDirectAnalysis(event)">
+            <input type="text" id="direct-owner" class="input-field" placeholder="Owner (e.g. PraveenPalkar18)" required>
+            <input type="text" id="direct-repo" class="input-field" placeholder="Repo (e.g. ShopFlow)" required>
+            <input type="number" id="direct-pr" class="input-field" placeholder="PR Number (e.g. 1)" required>
+            <button type="submit" class="btn btn-primary" style="width: 100%;" id="btn-direct-analyze">Analyze PR Now</button>
+          </form>
+        </div>
+      </aside>
+
+      <!-- Right Column: Detected Pull Requests -->
+      <main>
+        <div class="card">
+          <div class="card-header-title">
+            <span>Detected Pull Requests & Reports</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <label for="repo-filter-select" style="font-size: 12px; color: var(--text-muted);">Filter:</label>
+              <select id="repo-filter-select" class="input-field" style="margin-bottom: 0; width: auto; font-size: 12px; padding: 4px 8px;" onchange="applyPRFilter()">
+                <option value="monitored">Monitored Repos Only</option>
+                <option value="all">All Repositories</option>
+              </select>
+              <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="loadDashboardData()">Refresh</button>
+            </div>
           </div>
-          <div class="stat-box">
-            <div class="stat-label">Failed</div>
-            <div class="stat-val" style="color: var(--danger);" id="stat-failed-prs">0</div>
+          <div style="overflow-x: auto;">
+            <table class="pr-table">
+              <thead>
+                <tr>
+                  <th>PR</th>
+                  <th>Repository</th>
+                  <th>Title / Author</th>
+                  <th>Status</th>
+                  <th>Analyzed</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="pr-table-body">
+                <tr>
+                  <td colspan="6" class="empty-state">Loading detected pull requests...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-        <p style="font-size: 11px; color: var(--text-muted);" id="stat-poll-info">Poll interval: 60s</p>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Monitored Repositories</div>
-        <div id="repo-list">
-          <p style="color: var(--text-muted); font-size: 12px;">No repositories configured.</p>
-        </div>
-
-        <form id="add-repo-form" onsubmit="addRepository(event)" style="margin-top: 14px; border-top: 1px solid var(--card-border); padding-top: 14px;">
-          <input type="text" id="input-owner" class="input-field" placeholder="Owner / Org (e.g. pallets)" required>
-          <input type="text" id="input-repo" class="input-field" placeholder="Repository (e.g. flask)" required>
-          <button type="submit" class="btn btn-secondary" style="width: 100%;">+ Add Repository</button>
-        </form>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Quick Direct PR Analysis</div>
-        <form onsubmit="runDirectAnalysis(event)">
-          <input type="text" id="direct-owner" class="input-field" placeholder="Owner" required>
-          <input type="text" id="direct-repo" class="input-field" placeholder="Repo" required>
-          <input type="number" id="direct-pr" class="input-field" placeholder="PR Number" required>
-          <button type="submit" class="btn btn-primary" style="width: 100%;" id="btn-direct-analyze">Analyze PR Now</button>
-        </form>
-      </div>
-    </aside>
-
-    <!-- Right Column: Recent Pull Requests -->
-    <main>
-      <div class="card">
-        <div class="card-title">
-          <span>Detected Pull Requests & Reports</span>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <label for="repo-filter-select" style="font-size: 11px; color: var(--text-muted);">Filter:</label>
-            <select id="repo-filter-select" class="input-field" style="margin-bottom: 0; width: auto; font-size: 11px; padding: 3px 8px;" onchange="applyPRFilter()">
-              <option value="monitored">Monitored Repos Only</option>
-              <option value="all">All Repositories</option>
-            </select>
-            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="loadDashboardData()">Refresh</button>
-          </div>
-        </div>
-        <div style="overflow-x: auto;">
-          <table class="pr-table">
-            <thead>
-              <tr>
-                <th>PR</th>
-                <th>Repository</th>
-                <th>Title / Author</th>
-                <th>Status</th>
-                <th>Risk Level</th>
-                <th>Analyzed</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="pr-table-body">
-              <tr>
-                <td colspan="7" class="empty-state">Loading detected pull requests...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
-</div>
 
-<!-- Modal for PR Details -->
-<div class="modal-overlay" id="pr-modal-overlay">
-  <div class="modal">
-    <div class="modal-header">
-      <div>
-        <h2 id="modal-pr-title" style="font-size: 16px;">Pull Request Details</h2>
-        <span class="code-tag" id="modal-pr-coords" style="margin-top: 4px; display: inline-block;">owner/repo #0</span>
-      </div>
+  <!-- ============================================================
+       VIEW 2: PR ANALYSIS REPORT (CLEAN, SUMMARY-FIRST)
+       ============================================================ -->
+  <div id="view-pr-report">
+    <!-- Breadcrumb & Back action -->
+    <div class="report-nav-bar">
+      <button class="btn btn-secondary" onclick="showOverviewView()">
+        ← Back to All Pull Requests
+      </button>
       <div style="display: flex; gap: 8px; align-items: center;">
-        <button class="btn btn-secondary" id="btn-post-comment" onclick="postGitHubComment()">Post GitHub Comment</button>
-        <button class="btn btn-secondary" onclick="closeModal()">✕ Close</button>
+        <span id="report-view-repo-badge" class="code-tag" style="font-size: 12px;">owner/repo #0</span>
       </div>
     </div>
-    <div class="modal-body">
-      <div class="tab-bar">
-        <button class="tab-btn active" onclick="switchTab('intent')">Intent & Hunks</button>
-        <button class="tab-btn" onclick="switchTab('graph')">Dependency Graph</button>
-        <button class="tab-btn" onclick="switchTab('risk')">Risk Ranking</button>
-        <button class="tab-btn" onclick="switchTab('tests')">Regression Tests</button>
-        <button class="tab-btn" onclick="switchTab('limitations')">Limitations</button>
+
+    <!-- 1. Pull Request Header -->
+    <div class="pr-header-card">
+      <div class="pr-header-main" style="flex: 1; min-width: 320px;">
+        <div class="pr-header-coords">
+          <span id="hdr-repo-key" style="font-weight: 600;">owner/repo</span>
+          <span>•</span>
+          <span id="hdr-branch-flow" class="code-tag">base ← head</span>
+        </div>
+        <div class="pr-header-title">
+          <span id="hdr-pr-number" class="code-tag" style="font-size: 14px;">#0</span>
+          <span id="hdr-pr-title">Pull Request Title</span>
+          <span id="hdr-pr-status-badge" class="badge badge-neutral">closed</span>
+        </div>
+        <div class="pr-header-meta">
+          <span>Author: <b id="hdr-pr-author">@author</b></span>
+          <span>•</span>
+          <span>Analyzed: <span id="hdr-pr-timestamp">-</span></span>
+          <span>•</span>
+          <span>Provider: <span id="hdr-pr-provider" class="code-tag" style="font-size: 11px;">tfidf</span></span>
+        </div>
+
+        <!-- PR Stated Description Box -->
+        <div id="hdr-pr-description-container" class="pr-description-box">
+          <div class="pr-description-label">
+            <span>📝 PR Description</span>
+          </div>
+          <div id="hdr-pr-description" class="pr-description-body">
+            Loading pull request description...
+          </div>
+        </div>
+      </div>
+      <div class="pr-header-actions" style="align-self: flex-start;">
+        <a id="btn-open-pr-github" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+          Open on GitHub ↗
+        </a>
+        <button class="btn btn-secondary" id="btn-reanalyze-pr" onclick="triggerReportReanalysis()">
+          🔄 Re-analyze
+        </button>
+        <button class="btn btn-outline-brand" id="btn-post-comment" onclick="postGitHubComment()">
+          Post GitHub Comment
+        </button>
+      </div>
+    </div>
+
+    <!-- Sanitized AI Fallback Banner (shown only when fallback occurred) -->
+    <div id="ai-fallback-callout" class="ai-fallback-banner" style="display: none;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>⚠️</span>
+        <div>
+          <b>AI analysis unavailable — deterministic fallback used.</b>
+          <div style="font-size: 12px; color: #a16207; margin-top: 2px;">
+            The analysis was completed successfully using deterministic TF-IDF scoring and Tree-sitter AST rules.
+          </div>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="toggleFallbackDetails()">
+          View technical details
+        </button>
+      </div>
+    </div>
+    <div id="ai-fallback-details-box" class="ai-fallback-details"></div>
+
+    <!-- 2. Overall Result Summary Section -->
+    <div class="overall-result-card">
+      <div class="overall-result-top">
+        <div style="flex: 1; min-width: 280px;">
+          <div class="overall-intent-heading" style="margin-bottom: 8px;">
+            <span id="overall-intent-badge" class="badge badge-neutral" style="font-size: 12px; padding: 4px 10px;">Checking Intent...</span>
+            <span id="overall-risk-badge" class="badge badge-neutral" style="display: none;"></span>
+          </div>
+          <div class="overall-explanation-text" id="overall-explanation-text">
+            Evaluating stated pull request intent and diff modifications...
+          </div>
+        </div>
+
+        <div class="classification-count-bar">
+          <span class="badge badge-explained" id="badge-explained-count">Explained: 0</span>
+          <span class="badge badge-unexplained" id="badge-unexplained-count">Unexplained: 0</span>
+          <span class="badge badge-contradictory" id="badge-contradictory-count">Contradictory: 0</span>
+          <span class="badge badge-uncertain" id="badge-uncertain-count">Uncertain: 0</span>
+        </div>
       </div>
 
-      <div id="tab-content-intent"></div>
-      <div id="tab-content-graph" style="display: none;"></div>
-      <div id="tab-content-risk" style="display: none;"></div>
-      <div id="tab-content-tests" style="display: none;"></div>
-      <div id="tab-content-limitations" style="display: none;"></div>
+      <div class="overall-action-box" id="overall-action-text">
+        <b>Recommended Reviewer Action:</b> Loading recommended reviewer action...
+      </div>
+    </div>
+
+    <!-- 3. Four Compact Analysis Cards Grid -->
+    <div class="summary-cards-grid">
+      <!-- Card 1: Intent Analysis -->
+      <div class="summary-card" onclick="openAndScrollToSection('section-intent')">
+        <div>
+          <div class="summary-card-header">
+            <span class="summary-card-title">🎯 Intent Analysis</span>
+            <span id="card-intent-badge" class="badge badge-neutral">-</span>
+          </div>
+          <div class="summary-card-metric" id="card-intent-metric">0 / 0 Aligned</div>
+          <div class="summary-card-desc" id="card-intent-desc">Hunks analyzed against declared PR objective.</div>
+        </div>
+        <div class="summary-card-action">View details →</div>
+      </div>
+
+      <!-- Card 2: Change Impact -->
+      <div class="summary-card" onclick="openAndScrollToSection('section-graph')">
+        <div>
+          <div class="summary-card-header">
+            <span class="summary-card-title">🕸️ Change Impact</span>
+            <span id="card-impact-badge" class="badge badge-neutral">-</span>
+          </div>
+          <div class="summary-card-metric" id="card-impact-metric">0 Entities</div>
+          <div class="summary-card-desc" id="card-impact-desc">Downstream AST dependency propagation.</div>
+        </div>
+        <div class="summary-card-action">View details →</div>
+      </div>
+
+      <!-- Card 3: Risk Assessment (Hidden from frontend) -->
+      <div class="summary-card" id="card-risk-container" style="display: none;">
+        <div>
+          <span id="card-risk-badge"></span>
+          <span id="card-risk-metric"></span>
+          <span id="card-risk-desc"></span>
+        </div>
+      </div>
+
+      <!-- Card 4: Regression Tests -->
+      <div class="summary-card" onclick="openAndScrollToSection('section-tests')">
+        <div>
+          <div class="summary-card-header">
+            <span class="summary-card-title">🧪 Regression Tests</span>
+            <span id="card-tests-badge" class="badge badge-neutral">-</span>
+          </div>
+          <div class="summary-card-metric" id="card-tests-metric">0 Tests</div>
+          <div class="summary-card-desc" id="card-tests-desc">Targeted test recommendations for changed code.</div>
+        </div>
+        <div class="summary-card-action">View details →</div>
+      </div>
+    </div>
+
+    <!-- Details Toolbar (Section Jump & Expand/Collapse All) -->
+    <div class="details-toolbar">
+      <div class="details-jump-nav">
+        <span style="font-size: 12px; color: var(--text-muted); align-self: center; margin-right: 4px;">Jump to:</span>
+        <button class="jump-btn" onclick="openAndScrollToSection('section-intent')">🎯 Intent & Hunks</button>
+        <button class="jump-btn" onclick="openAndScrollToSection('section-graph')">🕸️ Dependency Graph</button>
+        <button class="jump-btn" onclick="openAndScrollToSection('section-tests')">🧪 Regression Tests</button>
+        <button class="jump-btn" onclick="openAndScrollToSection('section-limitations')">⚙️ Limitations</button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-secondary" style="font-size: 12px; padding: 4px 10px;" onclick="expandAllSections()">
+          Show all details
+        </button>
+        <button class="btn btn-secondary" style="font-size: 12px; padding: 4px 10px;" onclick="collapseAllSections()">
+          Collapse all
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. Expandable Details Sections -->
+
+    <!-- SECTION 1: Intent Analysis -->
+    <div class="detail-section" id="section-intent">
+      <div class="detail-header" onclick="toggleSection('section-intent')">
+        <div class="detail-header-left">
+          <span style="font-size: 16px;">🎯</span>
+          <span class="detail-header-title">Intent Analysis & Diff Hunks</span>
+          <span class="detail-header-summary" id="hdr-intent-summary">(0 hunks analyzed)</span>
+        </div>
+        <span class="detail-chevron">▼</span>
+      </div>
+      <div class="detail-body">
+        <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px;">
+          <b>Stated PR Intent Summary:</b>
+          <div id="intent-stated-summary" style="margin-top: 4px; color: var(--text-secondary);">No intent summary available.</div>
+        </div>
+        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+          Individual Diff Hunks & Intent Classification:
+        </h4>
+        <div id="hunks-accordion-container">
+          <p class="empty-state">No hunks available.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: Dependency Graph & Impact -->
+    <div class="detail-section" id="section-graph">
+      <div class="detail-header" onclick="toggleSection('section-graph')">
+        <div class="detail-header-left">
+          <span style="font-size: 16px;">🕸️</span>
+          <span class="detail-header-title">Change Impact & Dependency Graph</span>
+          <span class="detail-header-summary" id="hdr-graph-summary">(0 nodes, 0 edges)</span>
+        </div>
+        <span class="detail-chevron">▼</span>
+      </div>
+      <div class="detail-body">
+        <div id="graph-content-container">
+          <p class="empty-state">No graph data computed.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Risk Assessment (Hidden from frontend) -->
+    <div class="detail-section" id="section-risk" style="display: none;">
+      <div class="detail-header" onclick="toggleSection('section-risk')">
+        <div class="detail-header-left">
+          <span style="font-size: 16px;">⚖️</span>
+          <span class="detail-header-title">Risk Assessment & Contributing Factors</span>
+          <span class="detail-header-summary" id="hdr-risk-summary">(Risk Level: -)</span>
+        </div>
+        <span class="detail-chevron">▼</span>
+      </div>
+      <div class="detail-body">
+        <div id="risk-content-container">
+          <p class="empty-state">No risk assessment available.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: Regression Tests -->
+    <div class="detail-section" id="section-tests">
+      <div class="detail-header" onclick="toggleSection('section-tests')">
+        <div class="detail-header-left">
+          <span style="font-size: 16px;">🧪</span>
+          <span class="detail-header-title">Regression Tests Recommendation</span>
+          <span class="detail-header-summary" id="hdr-tests-summary">(0 recommended)</span>
+        </div>
+        <span class="detail-chevron">▼</span>
+      </div>
+      <div class="detail-body">
+        <div id="tests-content-container">
+          <p class="empty-state">No test recommendations available.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: Limitations & Provider Diagnostics -->
+    <div class="detail-section" id="section-limitations">
+      <div class="detail-header" onclick="toggleSection('section-limitations')">
+        <div class="detail-header-left">
+          <span style="font-size: 16px;">⚙️</span>
+          <span class="detail-header-title">Analysis Limitations & Provider Diagnostics</span>
+          <span class="detail-header-summary" id="hdr-limitations-summary">(Active Provider Status)</span>
+        </div>
+        <span class="detail-chevron">▼</span>
+      </div>
+      <div class="detail-body">
+        <div id="limitations-content-container">
+          <p class="empty-state">No limitations recorded.</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -388,35 +1354,50 @@
   let isWorkerRunning = false;
   let cachedPRs = [];
   let configuredRepos = [];
+  let graphFilterScope = 'all';
+  let graphSearchQuery = '';
+  let graphViewMode = 'visual';
+  let graphVisualFilter = 'all';
+  let selectedGraphNodeId = null;
 
   function showBanner(message, type = 'info') {
     const banner = document.getElementById('status-banner');
     if (!banner) return;
     banner.style.display = 'block';
     if (type === 'error') {
-      banner.style.background = 'rgba(248, 81, 73, 0.15)';
-      banner.style.border = '1px solid rgba(248, 81, 73, 0.4)';
-      banner.style.color = '#ff7b72';
+      banner.style.background = 'var(--danger-bg)';
+      banner.style.border = '1px solid var(--danger-border)';
+      banner.style.color = 'var(--danger-text)';
     } else if (type === 'success') {
-      banner.style.background = 'rgba(63, 185, 80, 0.15)';
-      banner.style.border = '1px solid rgba(63, 185, 80, 0.4)';
-      banner.style.color = '#56d364';
+      banner.style.background = 'var(--success-bg)';
+      banner.style.border = '1px solid var(--success-border)';
+      banner.style.color = 'var(--success-text)';
     } else {
-      banner.style.background = 'rgba(88, 166, 255, 0.15)';
-      banner.style.border = '1px solid rgba(88, 166, 255, 0.4)';
-      banner.style.color = '#79c0ff';
+      banner.style.background = 'var(--brand-subtle)';
+      banner.style.border = '1px solid var(--brand-border)';
+      banner.style.color = 'var(--brand-text)';
     }
     banner.innerHTML = message;
     if (type !== 'error') {
-      setTimeout(() => {
-        banner.style.display = 'none';
-      }, 7000);
+      setTimeout(() => { banner.style.display = 'none'; }, 7000);
     }
+  }
+
+  function showOverviewView() {
+    document.getElementById('view-dashboard-overview').style.display = 'block';
+    document.getElementById('view-pr-report').style.display = 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showReportView() {
+    document.getElementById('view-dashboard-overview').style.display = 'none';
+    document.getElementById('view-pr-report').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function loadDashboardData() {
     try {
-      // 1. Fetch monitoring status
+      // 1. Fetch monitoring worker status
       const statusRes = await fetch('/api/v1/monitoring/status');
       if (statusRes.ok) {
         const s = await statusRes.json();
@@ -447,7 +1428,7 @@
           pollInfo += ` | Last ok: ${new Date(s.last_successful_poll_time).toLocaleTimeString()}`;
         }
         if (s.last_error) {
-          pollInfo += `<br><span style="color: var(--danger);">Error: ${escapeHtml(s.last_error)}</span>`;
+          pollInfo += `<br><span style="color: var(--danger-text);">Error: ${escapeHtml(s.last_error)}</span>`;
         }
         document.getElementById('stat-poll-info').innerHTML = pollInfo;
 
@@ -517,7 +1498,7 @@
   function renderPRTable(prs) {
     const tbody = document.getElementById('pr-table-body');
     if (!prs || prs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No pull requests detected for the selected filter. Configure a repository or click "⚡ Poll Now".</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No pull requests detected for the selected filter. Configure a repository or click "⚡ Poll Now".</td></tr>';
       return;
     }
 
@@ -525,23 +1506,30 @@
       const parts = p.repo_key.split('/');
       const owner = parts[0];
       const repo = parts[1];
-      const riskLevel = p.analysis_report && p.analysis_report.risk_assessment ? p.analysis_report.risk_assessment.overall_risk_level : 'N/A';
-      const riskClass = riskLevel === 'HIGH' ? 'badge-high' : (riskLevel === 'MEDIUM' ? 'badge-medium' : 'badge-low');
       const timeStr = p.last_analyzed_at ? new Date(p.last_analyzed_at).toLocaleString() : (p.last_polled_at ? new Date(p.last_polled_at).toLocaleTimeString() : '-');
+
+      let statusBadgeClass = 'badge-neutral';
+      if (p.status === 'completed') statusBadgeClass = 'badge-completed';
+      else if (p.status === 'running') statusBadgeClass = 'badge-running';
+      else if (p.status === 'pending') statusBadgeClass = 'badge-pending';
+      else if (p.status === 'failed') statusBadgeClass = 'badge-failed';
 
       return `
         <tr onclick="viewPRDetail('${owner}', '${repo}', ${p.pr_number})">
           <td><span class="code-tag">#${p.pr_number}</span></td>
-          <td><b>${p.repo_key}</b></td>
+          <td><b>${escapeHtml(p.repo_key)}</b></td>
           <td>
-            <div style="font-weight: 500;">${escapeHtml(p.title || 'Untitled PR')}</div>
+            <div style="font-weight: 500; color: var(--text-primary);">${escapeHtml(p.title || 'Untitled PR')}</div>
             <div style="font-size: 11px; color: var(--text-muted);">by @${escapeHtml(p.author || 'unknown')}</div>
           </td>
-          <td><span class="badge badge-${p.status}">${p.status}</span></td>
-          <td>${riskLevel !== 'N/A' ? `<span class="badge ${riskClass}">${riskLevel}</span>` : '<span style="color:var(--text-muted);">-</span>'}</td>
+          <td><span class="badge ${statusBadgeClass}">${p.status}</span></td>
           <td style="font-size: 12px; color: var(--text-muted);">${timeStr}</td>
           <td>
-            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="event.stopPropagation(); reanalyzePR('${owner}', '${repo}', ${p.pr_number})">Analyze</button>
+            ${p.analysis_report ? `
+              <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px;" onclick="event.stopPropagation(); viewPRDetail('${owner}', '${repo}', ${p.pr_number})">Review Report</button>
+            ` : `
+              <button class="btn btn-primary" style="padding: 3px 8px; font-size: 11px;" onclick="event.stopPropagation(); reanalyzePR('${owner}', '${repo}', ${p.pr_number})">Analyze</button>
+            `}
           </td>
         </tr>
       `;
@@ -654,7 +1642,7 @@
       });
       if (res.ok) {
         const report = await res.json();
-        openModalWithReport(report, owner, repo, pr_number);
+        loadReportIntoUI(report, owner, repo, pr_number);
         loadDashboardData();
       } else {
         const err = await res.json();
@@ -674,12 +1662,25 @@
       if (res.ok) {
         const rec = await res.json();
         if (rec.analysis_report) {
-          openModalWithReport(rec.analysis_report, owner, repo, pr_number);
+          loadReportIntoUI(rec.analysis_report, owner, repo, pr_number);
         }
         loadDashboardData();
       }
     } catch (e) {
       alert("Re-analysis error: " + e);
+    }
+  }
+
+  async function triggerReportReanalysis() {
+    if (!activeOwner || !activeRepo || !activePRNumber) return;
+    const btn = document.getElementById('btn-reanalyze-pr');
+    btn.disabled = true;
+    btn.innerText = '⏳ Analyzing...';
+    try {
+      await reanalyzePR(activeOwner, activeRepo, activePRNumber);
+    } finally {
+      btn.disabled = false;
+      btn.innerText = '🔄 Re-analyze';
     }
   }
 
@@ -689,7 +1690,7 @@
       if (res.ok) {
         const rec = await res.json();
         if (rec.analysis_report) {
-          openModalWithReport(rec.analysis_report, owner, repo, pr_number);
+          loadReportIntoUI(rec.analysis_report, owner, repo, pr_number);
         } else {
           alert(`PR #${pr_number} status is '${rec.status}'. ${rec.error_message || 'Analysis pending or not available.'}`);
         }
@@ -699,196 +1700,1318 @@
     }
   }
 
-  function openModalWithReport(report, owner, repo, pr_number) {
+  /* ============================================================
+     REPORT LOADING & RENDERING (SUMMARY FIRST + EXPAND ON DEMAND)
+     ============================================================ */
+  function loadReportIntoUI(report, owner, repo, pr_number) {
     activeReport = report;
     activeOwner = owner;
     activeRepo = repo;
     activePRNumber = pr_number;
 
-    document.getElementById('modal-pr-title').innerText = report.title || `PR #${pr_number}`;
-    document.getElementById('modal-pr-coords').innerText = `${owner}/${repo} #${pr_number} (${report.base_branch} ← ${report.head_branch})`;
+    // 1. Populate Header
+    document.getElementById('report-view-repo-badge').innerText = `${owner}/${repo} #${pr_number}`;
+    document.getElementById('hdr-repo-key').innerText = `${owner}/${repo}`;
+    document.getElementById('hdr-branch-flow').innerText = `${report.base_branch || 'main'} ← ${report.head_branch || 'feature'}`;
+    document.getElementById('hdr-pr-number').innerText = `#${pr_number}`;
+    document.getElementById('hdr-pr-title').innerText = report.title || `PR #${pr_number}`;
 
-    renderIntentTab(report);
-    renderGraphTab(report);
-    renderRiskTab(report);
-    renderTestsTab(report);
-    renderLimitationsTab(report);
+    // Populate PR Description
+    const descEl = document.getElementById('hdr-pr-description');
+    if (descEl) {
+      const prDesc = (report.description || '').trim();
+      if (prDesc) {
+        descEl.innerText = prDesc;
+        descEl.style.fontStyle = 'normal';
+        descEl.style.color = 'var(--text-primary)';
+      } else {
+        descEl.innerText = '(No description provided for this pull request.)';
+        descEl.style.fontStyle = 'italic';
+        descEl.style.color = 'var(--text-muted)';
+      }
+    }
 
-    switchTab('intent');
-    document.getElementById('pr-modal-overlay').style.display = 'flex';
+    const state = (report.state || 'open').toLowerCase();
+    const stBadge = document.getElementById('hdr-pr-status-badge');
+    stBadge.innerText = state;
+    stBadge.className = `badge ${state === 'closed' ? 'badge-neutral' : 'badge-completed'}`;
+
+    document.getElementById('hdr-pr-author').innerText = `@${report.author || 'unknown'}`;
+    document.getElementById('hdr-pr-provider').innerText = `${report.ai_provider || 'tfidf'} (${report.ai_model || 'deterministic'})`;
+
+    const ghLink = document.getElementById('btn-open-pr-github');
+    ghLink.href = `https://github.com/${owner}/${repo}/pull/${pr_number}`;
+
+    // Timestamp
+    const prRec = cachedPRs.find(p => p.repo_key === `${owner}/${repo}` && p.pr_number === pr_number);
+    const tsStr = (prRec && prRec.last_analyzed_at) ? new Date(prRec.last_analyzed_at).toLocaleString() : 'Just now';
+    document.getElementById('hdr-pr-timestamp').innerText = tsStr;
+
+    // 2. Check for AI Fallback & Diagnostics
+    renderFallbackDiagnostics(report);
+
+    // 3. Overall Result & Dynamic Plain-Language Summary
+    renderOverallResult(report);
+
+    // 4. Four Compact Cards
+    renderFourCompactCards(report);
+
+    // 5. Populate Detailed Sections (Collapsed by Default)
+    collapseAllSections();
+    renderDetailedSections(report);
+
+    // Show the Report View
+    showReportView();
   }
 
-  function closeModal() {
-    document.getElementById('pr-modal-overlay').style.display = 'none';
-  }
+  function renderFallbackDiagnostics(report) {
+    const callout = document.getElementById('ai-fallback-callout');
+    const box = document.getElementById('ai-fallback-details-box');
+    box.style.display = 'none';
 
-  function switchTab(tabId) {
-    ['intent', 'graph', 'risk', 'tests', 'limitations'].forEach(t => {
-      document.getElementById(`tab-content-${t}`).style.display = (t === tabId) ? 'block' : 'none';
-    });
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach((btn, idx) => {
-      btn.className = 'tab-btn' + (['intent', 'graph', 'risk', 'tests', 'limitations'][idx] === tabId ? ' active' : '');
-    });
-  }
+    let isFallback = false;
+    let sanitizedError = '';
+    let attemptedProvider = 'AI';
 
-  function renderIntentTab(r) {
-    let hunksHtml = '';
-    if (r.files) {
-      r.files.forEach(f => {
+    // Check report provider and hunks
+    if (report.ai_provider === 'tfidf' && report.ai_model && report.ai_model.includes('fallback')) {
+      isFallback = true;
+    }
+
+    if (report.files) {
+      report.files.forEach(f => {
         if (f.hunks) {
           f.hunks.forEach(h => {
-            const badgeClass = h.classification === 'EXPLAINED' ? 'badge-completed' : (h.classification === 'UNEXPLAINED' ? 'badge-failed' : 'badge-pending');
-            hunksHtml += `
-              <div class="hunk-card">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                  <span class="code-tag">${escapeHtml(f.filename)} | Hunk #${h.hunk_index}</span>
-                  <span class="badge ${badgeClass}">${h.classification}</span>
-                </div>
-                <div style="font-size: 12px; margin-bottom: 6px;"><b>Target:</b> <code>${escapeHtml(h.matched_entity_id || f.filename)}</code></div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;"><b>Reason:</b> ${escapeHtml(h.reason || 'N/A')}</div>
-                <div style="font-size: 11px; color: var(--accent);">Similarity: ${(h.similarity_score * 100).toFixed(1)}% | Provider: ${h.provider_used || 'tfidf'}</div>
-              </div>
-            `;
+            if (h.provider_used && (h.provider_used.includes('gemini') || h.provider_used.includes('groq') || h.provider_used.includes('fallback'))) {
+              if (h.provider_used.includes('groq')) attemptedProvider = 'Groq';
+              else if (h.provider_used.includes('gemini')) attemptedProvider = 'Gemini';
+              isFallback = true;
+            }
+            if (h.missing_context) {
+              h.missing_context.forEach(mc => {
+                if (mc.includes('API invocation failed') || mc.includes('Groq API') || mc.includes('Gemini API') || mc.includes('403') || mc.includes('401') || mc.includes('429')) {
+                  isFallback = true;
+                  sanitizedError = mc;
+                  if (mc.includes('Groq')) attemptedProvider = 'Groq';
+                }
+              });
+            }
           });
         }
       });
     }
 
-    document.getElementById('tab-content-intent').innerHTML = `
-      <div class="notice">
-        <b>Stated PR Intent Summary:</b><br>${escapeHtml(r.overall_intent_summary || 'No intent summary provided.')}
-      </div>
-      <div style="display: flex; gap: 14px; margin-bottom: 16px;">
-        <span class="badge badge-completed">Explained: ${r.explained_count || 0}</span>
-        <span class="badge badge-failed">Unexplained: ${r.unexplained_count || 0}</span>
-        <span class="badge badge-pending">Uncertain: ${r.uncertain_count || 0}</span>
-      </div>
-      <h3 style="font-size: 14px; margin-bottom: 12px;">Diff Hunks & Intent Classification:</h3>
-      ${hunksHtml || '<p style="color:var(--text-muted);">No diff hunks available.</p>'}
-    `;
+    // If report ai_provider or hunk successfully used groq directly without fallback
+    if (report.ai_provider && report.ai_provider.includes('groq') && !report.ai_provider.includes('fallback')) {
+      let anyFailed = false;
+      if (report.files) {
+        report.files.forEach(f => {
+          if (f.hunks) {
+            f.hunks.forEach(h => {
+              if (h.provider_used && h.provider_used.includes('fallback')) anyFailed = true;
+            });
+          }
+        });
+      }
+      if (!anyFailed) {
+        isFallback = false;
+      }
+    }
+
+    if (isFallback) {
+      callout.style.display = 'flex';
+      box.innerText = `[Provider Attribution Diagnostic]\nAttempted Provider: ${attemptedProvider}\nActive Provider: ${report.ai_provider || 'tfidf'} (${report.ai_model || 'tfidf-fallback'})\nDiagnostic Details: ${sanitizedError || (attemptedProvider + ' API unavailable or access restricted. Evaluated cleanly using deterministic AST and TF-IDF rules.')}\nSecurity Notice: No raw API keys, credentials, or unredacted tokens are logged or transmitted.`;
+    } else {
+      callout.style.display = 'none';
+    }
   }
 
-  function renderGraphTab(r) {
+  function toggleFallbackDetails() {
+    const box = document.getElementById('ai-fallback-details-box');
+    box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function renderOverallResult(report) {
+    const exp = report.explained_count || 0;
+    const unexp = report.unexplained_count || 0;
+    const cont = report.contradictory_count || 0;
+    const unc = report.uncertain_count || 0;
+
+    document.getElementById('badge-explained-count').innerText = `Explained: ${exp}`;
+    document.getElementById('badge-unexplained-count').innerText = `Unexplained: ${unexp}`;
+    document.getElementById('badge-contradictory-count').innerText = `Contradictory: ${cont}`;
+    document.getElementById('badge-uncertain-count').innerText = `Uncertain: ${unc}`;
+
+    const overallBadge = document.getElementById('overall-intent-badge');
+    const riskBadge = document.getElementById('overall-risk-badge');
+    const explanationEl = document.getElementById('overall-explanation-text');
+    const actionEl = document.getElementById('overall-action-text');
+
+    // Risk factor display disabled in frontend
+    if (riskBadge) {
+      riskBadge.style.display = 'none';
+    }
+
+    // Intent alignment status & dynamic explanation
+    let plainExplanation = '';
+    let reviewerAction = '';
+
+    if (cont > 0) {
+      overallBadge.innerText = 'CONTRADICTION DETECTED';
+      overallBadge.className = 'badge badge-contradictory';
+      plainExplanation = `${cont} change hunk${cont === 1 ? '' : 's'} directly contradict the declared PR objective or introduce semantic divergence from stated intent.`;
+      reviewerAction = `<b>Recommended Reviewer Action:</b> Request changes or clarification from the author regarding the contradictory hunks before merging.`;
+    } else if (unexp > 0) {
+      overallBadge.innerText = 'NEEDS REVIEW';
+      overallBadge.className = 'badge badge-unexplained';
+      plainExplanation = exp > 0
+        ? `Most changes align with the stated intent. ${unexp} change needs review because its relationship to the PR objective is unclear.`
+        : `${unexp} modification${unexp === 1 ? '' : 's'} could not be verified against the stated PR objective.`;
+
+      // Find first unexplained filename for actionable suggestion
+      let unexpFile = '';
+      if (report.files) {
+        for (const f of report.files) {
+          if (f.hunks && f.hunks.some(h => h.classification === 'UNEXPLAINED')) {
+            unexpFile = f.filename;
+            break;
+          }
+        }
+      }
+      reviewerAction = `<b>Recommended Reviewer Action:</b> Review the unexplained change${unexpFile ? ' in <code>' + escapeHtml(unexpFile) + '</code>' : ''} to confirm whether it is an intentional dependency or out-of-scope code.`;
+    } else if (unc > 0) {
+      overallBadge.innerText = 'UNCERTAIN INTENT';
+      overallBadge.className = 'badge badge-uncertain';
+      plainExplanation = `Changes contain ambiguous or incomplete intent context (${unc} uncertain hunk${unc === 1 ? '' : 's'}). Human review is suggested.`;
+      reviewerAction = `<b>Recommended Reviewer Action:</b> Ask the author to provide a more descriptive PR body to clarify ambiguous modifications.`;
+    } else if (exp > 0) {
+      overallBadge.innerText = 'ALIGNED WITH INTENT';
+      overallBadge.className = 'badge badge-explained';
+      plainExplanation = `All ${exp} change hunk${exp === 1 ? '' : 's'} align cleanly with the stated pull request intent and declared AST entities.`;
+      reviewerAction = `<b>Recommended Reviewer Action:</b> Safe to proceed with standard code review; intent matches PR description and tests are mapped.`;
+    } else {
+      overallBadge.innerText = 'NO HUNKS ANALYZED';
+      overallBadge.className = 'badge badge-neutral';
+      plainExplanation = 'No diff hunks or code changes were detected for this pull request.';
+      reviewerAction = `<b>Recommended Reviewer Action:</b> Confirm that the pull request contains valid code changes and diffs.`;
+    }
+
+    explanationEl.innerHTML = plainExplanation;
+    actionEl.innerHTML = reviewerAction;
+  }
+
+  function renderFourCompactCards(report) {
+    const exp = report.explained_count || 0;
+    const unexp = report.unexplained_count || 0;
+    const cont = report.contradictory_count || 0;
+    const unc = report.uncertain_count || 0;
+    const totalHunks = report.total_hunks_analyzed || (exp + unexp + cont + unc);
+
+    // Card 1: Intent
+    const cardIntentBadge = document.getElementById('card-intent-badge');
+    const cardIntentMetric = document.getElementById('card-intent-metric');
+    const cardIntentDesc = document.getElementById('card-intent-desc');
+
+    if (cont > 0) {
+      cardIntentBadge.innerText = `${cont} Contradictory`;
+      cardIntentBadge.className = 'badge badge-contradictory';
+    } else if (unexp > 0) {
+      cardIntentBadge.innerText = `${unexp} Unexplained`;
+      cardIntentBadge.className = 'badge badge-unexplained';
+    } else if (unc > 0) {
+      cardIntentBadge.innerText = `${unc} Uncertain`;
+      cardIntentBadge.className = 'badge badge-uncertain';
+    } else if (exp > 0) {
+      cardIntentBadge.innerText = 'Aligned';
+      cardIntentBadge.className = 'badge badge-explained';
+    } else {
+      cardIntentBadge.innerText = 'N/A';
+      cardIntentBadge.className = 'badge badge-neutral';
+    }
+    cardIntentMetric.innerText = `${exp} / ${totalHunks} Explained`;
+    cardIntentDesc.innerText = unexp > 0 ? `${unexp} hunk requires intent verification.` : (cont > 0 ? `${cont} hunk conflicts with PR objective.` : 'All hunks align with declared intent.');
+
+    // Card 2: Impact / Graph
+    const cg = report.change_graph;
+    const cardImpactBadge = document.getElementById('card-impact-badge');
+    const cardImpactMetric = document.getElementById('card-impact-metric');
+    const cardImpactDesc = document.getElementById('card-impact-desc');
+
+    if (cg) {
+      const impFiles = cg.impacted_files_count || 0;
+      const impEntities = cg.impacted_entities_count || 0;
+      cardImpactBadge.innerText = impFiles > 0 ? `${impFiles} Impacted Files` : '0 Downstream Files';
+      cardImpactBadge.className = impFiles > 0 ? 'badge badge-inferred' : 'badge badge-neutral';
+      cardImpactMetric.innerText = impEntities > 0 ? `${impEntities} Impacted Entities` : '0 Downstream Entities';
+      cardImpactDesc.innerText = `${cg.total_nodes || 0} graph nodes, ${cg.total_edges || 0} edges analyzed (${report.total_files_analyzed || 0} PR files parsed).`;
+    } else {
+      cardImpactBadge.innerText = 'Not analyzed';
+      cardImpactBadge.className = 'badge badge-neutral';
+      cardImpactMetric.innerText = 'Not available';
+      cardImpactDesc.innerText = 'Dependency graph was not computed for this PR.';
+    }
+
+
+    // Card 3: Risk Assessment
+    const ra = report.risk_assessment;
+    const cardRiskBadge = document.getElementById('card-risk-badge');
+    const cardRiskMetric = document.getElementById('card-risk-metric');
+    const cardRiskDesc = document.getElementById('card-risk-desc');
+
+    if (ra) {
+      cardRiskBadge.innerText = ra.overall_risk_level;
+      if (ra.overall_risk_level === 'HIGH') cardRiskBadge.className = 'badge badge-high';
+      else if (ra.overall_risk_level === 'MEDIUM') cardRiskBadge.className = 'badge badge-medium';
+      else cardRiskBadge.className = 'badge badge-low';
+
+      cardRiskMetric.innerText = `${ra.overall_risk_level} (${ra.overall_risk_score})`;
+
+      // Main risk reason
+      let mainReason = 'Blast radius and change scope within expected bounds.';
+      if (ra.risk_factors && ra.risk_factors.length > 0) {
+        const topFactor = ra.risk_factors.find(f => f.level === 'HIGH') || ra.risk_factors.find(f => f.level === 'MEDIUM') || ra.risk_factors[0];
+        if (topFactor) {
+          mainReason = `${topFactor.name} (${topFactor.level}): ${topFactor.description}`;
+        }
+      }
+      cardRiskDesc.innerText = mainReason;
+    } else {
+      cardRiskBadge.innerText = 'Not analyzed';
+      cardRiskBadge.className = 'badge badge-neutral';
+      cardRiskMetric.innerText = 'Not available';
+      cardRiskDesc.innerText = 'Risk engine has not evaluated this pull request.';
+    }
+
+    // Card 4: Regression Tests
+    const ts = report.test_selection;
+    const cardTestsBadge = document.getElementById('card-tests-badge');
+    const cardTestsMetric = document.getElementById('card-tests-metric');
+    const cardTestsDesc = document.getElementById('card-tests-desc');
+
+    if (ts) {
+      const count = ts.recommended_tests ? ts.recommended_tests.length : 0;
+      cardTestsBadge.innerText = `${ts.critical_count || 0} Critical`;
+      cardTestsBadge.className = ts.critical_count > 0 ? 'badge-high' : 'badge-completed';
+      cardTestsMetric.innerText = `${count} Recommended`;
+      cardTestsDesc.innerText = count > 0 ? `${ts.high_count || 0} high-priority tests mapped via static imports.` : 'No existing tests directly exercise modified entities.';
+    } else {
+      cardTestsBadge.innerText = 'Not analyzed';
+      cardTestsBadge.className = 'badge badge-neutral';
+      cardTestsMetric.innerText = 'Not available';
+      cardTestsDesc.innerText = 'Regression test selection was not performed.';
+    }
+  }
+
+  function renderDetailedSections(report) {
+    // 1. Intent Details
+    renderIntentDetails(report);
+    // 2. Graph Details
+    renderGraphDetails(report);
+    // 3. Risk Details
+    renderRiskDetails(report);
+    // 4. Tests Details
+    renderTestsDetails(report);
+    // 5. Limitations Details
+    renderLimitationsDetails(report);
+  }
+
+  function renderIntentDetails(r) {
+    document.getElementById('hdr-intent-summary').innerText = `(${r.total_hunks_analyzed || 0} hunks analyzed across ${r.total_files_analyzed || (r.files ? r.files.length : 0)} files)`;
+
+    // Stated PR Intent & Description summary box
+    let statedHtml = `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 13px;">
+          <span style="font-weight: 700; color: var(--text-primary);">Stated PR Objective:</span>
+          <span style="color: var(--brand-primary); font-weight: 600; margin-left: 6px;">${escapeHtml(r.title || '')}</span>
+        </div>
+    `;
+    if (r.description && r.description.trim()) {
+      statedHtml += `
+        <div style="font-size: 12px; color: var(--text-secondary); background: #ffffff; padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); border-left: 3px solid var(--brand-primary);">
+          <b style="color: var(--text-primary); display: block; margin-bottom: 2px;">PR Description:</b>
+          <div style="white-space: pre-wrap; line-height: 1.5;">${escapeHtml(r.description.trim())}</div>
+        </div>
+      `;
+    }
+    statedHtml += `
+        <div style="font-size: 12px; color: var(--text-muted); border-top: 1px dashed var(--border-subtle); padding-top: 6px;">
+          <b>Intent Evaluation:</b> <span>${escapeHtml(r.overall_intent_summary || 'Intent evaluated against declared diff modifications.')}</span>
+        </div>
+      </div>
+    `;
+    document.getElementById('intent-stated-summary').innerHTML = statedHtml;
+
+    const container = document.getElementById('hunks-accordion-container');
+    if (!r.files || r.files.length === 0) {
+      container.innerHTML = '<p class="empty-state">No diff hunks or modified files detected.</p>';
+      return;
+    }
+
+    let html = '';
+    r.files.forEach((f, fIdx) => {
+      if (f.hunks && f.hunks.length > 0) {
+        f.hunks.forEach((h, hIdx) => {
+          let badgeClass = 'badge-neutral';
+          if (h.classification === 'EXPLAINED') badgeClass = 'badge-explained';
+          else if (h.classification === 'CONTRADICTORY') badgeClass = 'badge-contradictory';
+          else if (h.classification === 'UNEXPLAINED') badgeClass = 'badge-unexplained';
+          else if (h.classification === 'UNCERTAIN') badgeClass = 'badge-uncertain';
+
+          const hunkCardId = `hunk-card-${fIdx}-${hIdx}`;
+          const techId = `${hunkCardId}-tech`;
+
+          html += `
+            <div class="hunk-item-card" id="${hunkCardId}">
+              <!-- Main Hunk Header: File name, Line range, and Label Badge -->
+              <div class="hunk-item-header">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span class="code-tag" style="font-weight: 600; font-size: 12px;">${escapeHtml(f.filename)}</span>
+                  <span style="color: var(--text-muted); font-size: 12px;">Hunk #${h.hunk_index} (Line ${h.new_start_line})</span>
+                  ${h.change_type ? `<span class="badge badge-neutral" style="font-size: 10px; text-transform: uppercase;">${escapeHtml(h.change_type)}</span>` : ''}
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="badge ${badgeClass}" style="font-size: 12px; font-weight: 700; padding: 4px 12px;">${h.classification}</span>
+                </div>
+              </div>
+
+              <!-- Main Details: Just Label and Small Explanation Why That Label is Chosen -->
+              <div class="hunk-item-main">
+                <div class="hunk-reason-display">
+                  <div class="hunk-reason-label">Why ${h.classification}:</div>
+                  <div class="hunk-reason-text">
+                    ${escapeHtml(h.reason || 'Classification assigned based on intent alignment.')}
+                  </div>
+                </div>
+
+                ${h.contradiction_signals && h.contradiction_signals.length > 0 ? `
+                  <div style="background: var(--danger-bg); border-left: 3px solid var(--danger-text); padding: 8px 12px; margin-top: 8px; border-radius: 4px; font-size: 12px; color: var(--danger-text);">
+                    <b>⚠️ Contradiction Signal:</b> ${h.contradiction_signals.map(s => escapeHtml(s)).join('; ')}
+                  </div>
+                ` : ''}
+
+                ${h.missing_context && h.missing_context.length > 0 ? `
+                  <div style="background: var(--warning-bg); border-left: 3px solid var(--warning-text); padding: 8px 12px; margin-top: 8px; border-radius: 4px; font-size: 12px; color: var(--warning-text);">
+                    <b>⚠️ Notice / Missing Context:</b>
+                    <ul style="margin-left: 18px; margin-top: 4px;">
+                      ${h.missing_context.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
+                    </ul>
+                  </div>
+                ` : ''}
+
+                <!-- Action Bar with Show More Information -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 11px; color: var(--text-muted);">
+                    Confidence: <b>${Math.round((h.confidence || 0) * 100)}%</b>
+                  </span>
+                  <button class="btn btn-secondary hunk-tech-toggle-btn" style="font-size: 11px; padding: 3px 10px; cursor: pointer;" onclick="toggleHunkTechDetails('${techId}', this)">
+                    <span>ℹ️ Show more information</span> ▼
+                  </button>
+                </div>
+              </div>
+
+              <!-- Additional Technical Details (Hidden by Default) -->
+              <div class="hunk-tech-details" id="${techId}" style="display: none;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 10px; font-size: 12px;">
+                  <div>
+                    <span style="font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Matched AST Entity</span>
+                    <div style="margin-top: 2px;"><code class="code-tag">${escapeHtml(h.matched_entity_id || f.filename)}</code></div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+                      Type: ${escapeHtml(h.matched_entity_type || 'file_level')} • Scope: ${escapeHtml(h.association_type || 'file_level')}
+                    </div>
+                  </div>
+                  <div>
+                    <span style="font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Apparent Purpose</span>
+                    <div style="margin-top: 2px; color: var(--text-secondary);">${escapeHtml(h.apparent_purpose || 'N/A')}</div>
+                  </div>
+                </div>
+
+                ${h.evidence && h.evidence.length > 0 ? `
+                  <div style="margin-bottom: 10px; font-size: 12px;">
+                    <span style="font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase;">Concrete Evidence</span>
+                    <ul style="margin-left: 18px; margin-top: 3px; font-size: 11px; color: var(--text-secondary);">
+                      ${h.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
+                    </ul>
+                  </div>
+                ` : ''}
+
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; gap: 8px;">
+                  <span><b>TF-IDF Similarity:</b> ${(h.similarity_score * 100).toFixed(1)}%</span>
+                  <span><b>Provider:</b> ${escapeHtml(h.provider_used || 'tfidf')} (${escapeHtml(h.model_used || 'deterministic')})</span>
+                  <span><b>Uncertainty Score:</b> ${(h.uncertainty_score !== undefined ? (h.uncertainty_score * 100).toFixed(0) : '0')}%</span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      }
+    });
+
+    container.innerHTML = html || '<p class="empty-state">No hunks detected in modified files.</p>';
+  }
+
+  function toggleHunkTechDetails(techId, btn) {
+    const el = document.getElementById(techId);
+    if (!el) return;
+    const isHidden = el.style.display === 'none';
+    el.style.display = isHidden ? 'block' : 'none';
+    if (btn) {
+      btn.innerHTML = isHidden
+        ? '<span>ℹ️ Hide additional information</span> ▲'
+        : '<span>ℹ️ Show more information</span> ▼';
+    }
+  }
+
+  function toggleHunkAccordion(hunkId) {
+    const item = document.getElementById(hunkId);
+    if (!item) return;
+    item.classList.toggle('open');
+    const chev = document.getElementById(`${hunkId}-chev`);
+    if (chev) {
+      chev.style.transform = item.classList.contains('open') ? 'rotate(180deg)' : 'none';
+    }
+  }
+
+  function setGraphViewMode(mode) {
+    graphViewMode = mode;
+    if (activeReport) renderGraphDetails(activeReport);
+  }
+
+  function setGraphVisualFilter(filter) {
+    graphVisualFilter = filter;
+    if (activeReport) renderGraphDetails(activeReport);
+  }
+
+  function selectGraphNode(nodeId) {
+    selectedGraphNodeId = (selectedGraphNodeId === nodeId) ? null : nodeId;
+    if (activeReport) renderGraphDetails(activeReport);
+  }
+
+  function highlightGraphNode(nodeId) {
+    const svg = document.getElementById('dependency-graph-svg');
+    if (!svg) return;
+    const paths = svg.querySelectorAll('.graph-edge-path');
+    const nodes = svg.querySelectorAll('.graph-node-g');
+    const connectedNodeIds = new Set([nodeId]);
+
+    paths.forEach(p => {
+      const src = p.getAttribute('data-source');
+      const tgt = p.getAttribute('data-target');
+      if (src === nodeId || tgt === nodeId) {
+        p.style.opacity = '1';
+        p.style.strokeWidth = '3.5px';
+        connectedNodeIds.add(src);
+        connectedNodeIds.add(tgt);
+      } else {
+        p.style.opacity = '0.12';
+      }
+    });
+
+    nodes.forEach(n => {
+      const nid = n.getAttribute('data-node-id');
+      if (connectedNodeIds.has(nid)) {
+        n.style.opacity = '1';
+      } else {
+        n.style.opacity = '0.35';
+      }
+    });
+  }
+
+  function unhighlightGraphNode() {
+    const svg = document.getElementById('dependency-graph-svg');
+    if (!svg) return;
+    svg.querySelectorAll('.graph-edge-path').forEach(p => {
+      p.style.opacity = '';
+      p.style.strokeWidth = '';
+    });
+    svg.querySelectorAll('.graph-node-g').forEach(n => {
+      n.style.opacity = '';
+    });
+  }
+
+  function renderGraphDetails(r) {
     const cg = r.change_graph;
     if (!cg) {
-      document.getElementById('tab-content-graph').innerHTML = '<p class="empty-state">No dependency graph computed.</p>';
+      document.getElementById('hdr-graph-summary').innerText = '(Not computed)';
+      document.getElementById('graph-content-container').innerHTML = '<p class="empty-state">No dependency graph computed for this pull request.</p>';
       return;
     }
 
-    let entitiesHtml = '';
-    if (cg.impacted_entities) {
-      entitiesHtml = cg.impacted_entities.map(e => `
-        <tr>
-          <td><span class="code-tag">${escapeHtml(e.name)}</span></td>
-          <td>${e.entity_type}</td>
-          <td>${escapeHtml(e.file_path)}</td>
-          <td>${e.min_distance} hop(s)</td>
-          <td style="font-size: 11px; font-family: var(--font-mono);">${e.impact_paths && e.impact_paths[0] ? escapeHtml(e.impact_paths[0].path_description) : '-'}</td>
-        </tr>
-      `).join('');
+    document.getElementById('hdr-graph-summary').innerText = `(${cg.total_nodes} nodes, ${cg.total_edges} edges, ${cg.impacted_entities_count} impacted entities)`;
+
+    let entities = cg.impacted_entities || [];
+    if (graphFilterScope === 'direct') {
+      entities = entities.filter(e => e.min_distance === 1);
+    } else if (graphFilterScope === 'transitive') {
+      entities = entities.filter(e => e.min_distance > 1);
+    }
+    if (graphSearchQuery) {
+      entities = entities.filter(e => e.name.toLowerCase().includes(graphSearchQuery) || e.file_path.toLowerCase().includes(graphSearchQuery));
     }
 
-    document.getElementById('tab-content-graph').innerHTML = `
-      <div class="stat-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
-        <div class="stat-box"><div class="stat-label">Graph Nodes</div><div class="stat-val">${cg.total_nodes}</div></div>
-        <div class="stat-box"><div class="stat-label">Directed Edges</div><div class="stat-val">${cg.total_edges}</div></div>
-        <div class="stat-box"><div class="stat-label">Impacted Entities</div><div class="stat-val">${cg.impacted_entities_count}</div></div>
-        <div class="stat-box"><div class="stat-label">Impacted Files</div><div class="stat-val">${cg.impacted_files_count}</div></div>
+    let entitiesRows = entities.map(e => {
+      const certClass = e.certainty === 'CONFIRMED' ? 'badge-confirmed' : (e.certainty === 'INFERRED' ? 'badge-inferred' : 'badge-neutral');
+      const distLabel = e.min_distance === 1 ? '<span style="color: var(--brand-primary); font-weight:600;">Direct (1 hop)</span>' : `<span style="color: var(--warning-text); font-weight:600;">${e.min_distance} hops (Transitive)</span>`;
+      const pathDesc = e.impact_paths && e.impact_paths[0] ? escapeHtml(e.impact_paths[0].path_description) : '-';
+      const reason = e.impact_paths && e.impact_paths[0] ? escapeHtml(e.impact_paths[0].impact_reason) : '';
+
+      return `
+        <tr>
+          <td><span class="code-tag" style="font-weight: 600;">${escapeHtml(e.name)}</span></td>
+          <td><span style="font-size: 11px; text-transform: uppercase;">${escapeHtml(e.entity_type)}</span></td>
+          <td><span style="font-size: 12px; color: var(--text-secondary);">${escapeHtml(e.file_path)}</span></td>
+          <td><span class="badge ${certClass}">${escapeHtml(e.certainty || 'CONFIRMED')}</span></td>
+          <td>${distLabel}</td>
+          <td style="font-size: 11px;">
+            <div style="font-family: var(--font-mono); color: var(--brand-text);">${pathDesc}</div>
+            ${reason ? `<div style="color: var(--text-muted); margin-top: 2px;">${reason}</div>` : ''}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Edges table rows
+    let edgesRows = '';
+    if (cg.edges && cg.edges.length > 0) {
+      edgesRows = cg.edges.map(ed => {
+        const certClass = ed.certainty === 'CONFIRMED' ? 'badge-confirmed' : (ed.certainty === 'INFERRED' ? 'badge-inferred' : 'badge-neutral');
+        return `
+          <tr>
+            <td><code class="code-tag" style="font-size: 11px;">${escapeHtml(ed.source)}</code></td>
+            <td><span class="code-tag">${escapeHtml(ed.edge_type)}</span></td>
+            <td><code class="code-tag" style="font-size: 11px;">${escapeHtml(ed.target)}</code></td>
+            <td><span class="badge ${certClass}">${escapeHtml(ed.certainty)}</span></td>
+            <td style="font-size: 11px; color: var(--text-muted);">${escapeHtml(ed.evidence || ed.detection_method)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Impacted count
+    const impactedCount = cg.impacted_entities_count || (cg.impacted_entities ? cg.impacted_entities.length : 0);
+    const changedCount = cg.changed_entities ? cg.changed_entities.length : 0;
+
+    let contentHtml = `
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+        <div class="stat-box-worker"><div class="stat-label">Graph Nodes</div><div class="stat-val">${cg.total_nodes}</div></div>
+        <div class="stat-box-worker"><div class="stat-label">Directed Edges</div><div class="stat-val">${cg.total_edges}</div></div>
+        <div class="stat-box-worker">
+          <div class="stat-label">Impacted Entities</div>
+          <div class="stat-val" style="color: ${impactedCount > 0 ? '#b45309' : 'inherit'};">${impactedCount}</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Direct: ${cg.direct_impacted_entities_count || 0} • Transitive: ${cg.transitive_impacted_entities_count || 0}</div>
+        </div>
+        <div class="stat-box-worker">
+          <div class="stat-label">Impacted Files</div>
+          <div class="stat-val">${cg.impacted_files_count}</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Direct: ${cg.direct_impacted_files_count || 0} • Transitive: ${cg.transitive_impacted_files_count || 0}</div>
+        </div>
       </div>
-      <h3 style="font-size: 14px; margin-bottom: 10px;">Downstream Impacted Entities:</h3>
-      <table class="pr-table">
-        <thead>
-          <tr><th>Entity</th><th>Type</th><th>File</th><th>Distance</th><th>Explainable Impact Path</th></tr>
-        </thead>
-        <tbody>
-          ${entitiesHtml || '<tr><td colspan="5" class="empty-state">No downstream entities impacted.</td></tr>'}
-        </tbody>
-      </table>
+
+      <!-- Graph View Switcher Toolbar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+        <div class="graph-view-switcher">
+          <button class="graph-view-btn ${graphViewMode === 'visual' ? 'active' : ''}" onclick="setGraphViewMode('visual')">
+            🕸️ Visual Graph Format
+          </button>
+          <button class="graph-view-btn ${graphViewMode === 'table' ? 'active' : ''}" onclick="setGraphViewMode('table')">
+            📋 Table View (Edges & Details)
+          </button>
+        </div>
+
+        <div style="flex-grow: 1; max-width: 280px;">
+          <input type="text" class="input-field" style="margin-bottom: 0; font-size: 12px; padding: 5px 10px;" placeholder="Search symbol or file in graph..." value="${escapeHtml(graphSearchQuery)}" oninput="setGraphSearch(this.value)">
+        </div>
+      </div>
+    `;
+
+    if (graphViewMode === 'visual') {
+      contentHtml += `
+        <!-- Visual Graph Filters & Legend -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted);">Filter Graph:</span>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphVisualFilter === 'all' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphVisualFilter('all')">All Elements (${cg.total_nodes})</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphVisualFilter === 'impacted_changed' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphVisualFilter('impacted_changed')">Impacted & Changed Only</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphVisualFilter === 'impacted' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphVisualFilter('impacted')">Impacted Only (${impactedCount})</button>
+          </div>
+
+          <div style="display: flex; gap: 12px; font-size: 11px; align-items: center; color: var(--text-secondary); flex-wrap: wrap;">
+            <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #f59e0b; margin-right: 4px;"></span><b>Impacted Entity</b> (Downstream)</span>
+            <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #2563eb; margin-right: 4px;"></span><b>Directly Changed</b></span>
+            <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: #94a3b8; margin-right: 4px;"></span><b>File Container</b></span>
+          </div>
+        </div>
+
+        <!-- Interactive SVG Visual Canvas -->
+        <div class="graph-svg-container">
+          ${buildVisualGraphSvg(cg)}
+        </div>
+
+        <!-- Node Inspector (Active on Click) -->
+        ${buildNodeInspectorCard(cg, selectedGraphNodeId)}
+
+        <!-- Collapsible Resolved Edges Table for Quick Tabular Inspection -->
+        <details style="margin-top: 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 14px; background: #ffffff;">
+          <summary style="font-size: 12px; font-weight: 600; cursor: pointer; color: var(--brand-primary);">
+            Inspect Resolved Dependency Edges (${cg.edges ? cg.edges.length : 0} total)
+          </summary>
+          <div style="overflow-x: auto; margin-top: 10px;">
+            <table class="pr-table">
+              <thead>
+                <tr><th>Source Entity</th><th>Relationship</th><th>Target Entity</th><th>Certainty</th><th>Detection / Evidence</th></tr>
+              </thead>
+              <tbody>${edgesRows || '<tr><td colspan="5" class="empty-state">No edges recorded.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </details>
+      `;
+    } else {
+      // Tabular View
+      contentHtml += `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap;">
+          <div style="display: flex; gap: 6px; align-items: center;">
+            <span style="font-size: 12px; color: var(--text-muted);">Scope:</span>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphFilterScope === 'all' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphFilter('all')">All (${impactedCount})</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphFilterScope === 'direct' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphFilter('direct')">Direct (${cg.direct_impacted_entities_count || 0})</button>
+            <button class="btn btn-secondary" style="padding: 3px 8px; font-size: 11px; ${graphFilterScope === 'transitive' ? 'border-color: var(--brand-primary); color: var(--brand-primary); font-weight: 600;' : ''}" onclick="setGraphFilter('transitive')">Transitive (${cg.transitive_impacted_entities_count || 0})</button>
+          </div>
+        </div>
+
+        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+          Downstream Impacted Code Entities:
+        </h4>
+        <div style="overflow-x: auto; margin-bottom: 16px;">
+          <table class="pr-table">
+            <thead>
+              <tr><th>Entity</th><th>Type</th><th>File</th><th>Certainty</th><th>Scope</th><th>Impact Path & Evidence</th></tr>
+            </thead>
+            <tbody>
+              ${entitiesRows || '<tr><td colspan="6" class="empty-state">No matching downstream entities impacted by these changes.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+
+        <details open style="margin-top: 14px; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 10px 14px; background: #ffffff;">
+          <summary style="font-size: 12px; font-weight: 600; cursor: pointer; color: var(--brand-primary); margin-bottom: 10px;">
+            Inspect Resolved Dependency Edges (${cg.edges ? cg.edges.length : 0} total)
+          </summary>
+          <div style="overflow-x: auto;">
+            <table class="pr-table">
+              <thead>
+                <tr><th>Source Entity</th><th>Relationship</th><th>Target Entity</th><th>Certainty</th><th>Detection / Evidence</th></tr>
+              </thead>
+              <tbody>${edgesRows || '<tr><td colspan="5" class="empty-state">No cross-entity dependency edges recorded for this change scope.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </details>
+      `;
+    }
+
+    document.getElementById('graph-content-container').innerHTML = contentHtml;
+  }
+
+  function buildVisualGraphSvg(cg) {
+    if (!cg) {
+      return '<div class="empty-state">No dependency graph available.</div>';
+    }
+
+    const changedList = cg.changed_entities || [];
+    const edgesList = cg.edges || [];
+    const impactedList = cg.impacted_entities || [];
+
+    if (edgesList.length === 0 && changedList.length === 0 && impactedList.length === 0) {
+      return '<div class="empty-state">No dependency edges or nodes available for visual graph rendering.</div>';
+    }
+
+    const nodeMap = new Map();
+
+    function getNode(id) {
+      if (!nodeMap.has(id)) {
+        const isImpacted = impactedList.some(ie => ie.node_id === id);
+        const isChanged = changedList.some(ce => ce === id || `entity:${ce}` === id || `file:${ce}` === id);
+        const isFile = id.startsWith('file:');
+
+        let cleanName = id;
+        if (cleanName.includes('::')) cleanName = cleanName.split('::')[1];
+        else if (cleanName.startsWith('file:')) cleanName = cleanName.replace('file:', '');
+        else if (cleanName.startsWith('entity:')) cleanName = cleanName.replace('entity:', '');
+
+        let filePath = '';
+        if (id.startsWith('file:')) filePath = id.replace('file:', '');
+        else if (id.includes('::')) filePath = id.split('::')[0].replace('entity:', '');
+
+        const impObj = impactedList.find(ie => ie.node_id === id);
+
+        nodeMap.set(id, {
+          id,
+          name: cleanName,
+          filePath,
+          isImpacted,
+          isChanged,
+          isFile,
+          impObj,
+          inEdges: [],
+          outEdges: [],
+          layer: 0,
+          x: 0,
+          y: 0
+        });
+      }
+      return nodeMap.get(id);
+    }
+
+    // Build graph structure
+    edgesList.forEach(e => {
+      const s = getNode(e.source);
+      const t = getNode(e.target);
+      s.outEdges.push(e);
+      t.inEdges.push(e);
+    });
+
+    changedList.forEach(ce => {
+      const id = ce.startsWith('file:') || ce.startsWith('entity:') ? ce : `entity:${ce}`;
+      getNode(id);
+    });
+    impactedList.forEach(ie => getNode(ie.node_id));
+
+    // Filter nodes based on graphVisualFilter
+    let visibleNodes = Array.from(nodeMap.values());
+    if (graphVisualFilter === 'impacted_changed') {
+      const keepIds = new Set();
+      visibleNodes.forEach(n => {
+        if (n.isImpacted || n.isChanged) {
+          keepIds.add(n.id);
+          n.inEdges.forEach(ed => keepIds.add(ed.source));
+          n.outEdges.forEach(ed => keepIds.add(ed.target));
+        }
+      });
+      visibleNodes = visibleNodes.filter(n => keepIds.has(n.id));
+    } else if (graphVisualFilter === 'impacted') {
+      const keepIds = new Set();
+      visibleNodes.forEach(n => {
+        if (n.isImpacted) {
+          keepIds.add(n.id);
+          n.inEdges.forEach(ed => keepIds.add(ed.source));
+        }
+      });
+      visibleNodes = visibleNodes.filter(n => keepIds.has(n.id));
+    }
+
+    if (graphSearchQuery) {
+      const q = graphSearchQuery.toLowerCase();
+      const matchIds = new Set();
+      visibleNodes.forEach(n => {
+        if (n.name.toLowerCase().includes(q) || n.filePath.toLowerCase().includes(q)) {
+          matchIds.add(n.id);
+          n.inEdges.forEach(ed => matchIds.add(ed.source));
+          n.outEdges.forEach(ed => matchIds.add(ed.target));
+        }
+      });
+      visibleNodes = visibleNodes.filter(n => matchIds.has(n.id));
+    }
+
+    const visibleNodeMap = new Map();
+    visibleNodes.forEach(n => visibleNodeMap.set(n.id, n));
+
+    // Assign layers (Columns)
+    const layers = [[], [], [], []];
+    visibleNodes.forEach(n => {
+      if (n.isImpacted) {
+        n.layer = 3;
+      } else if (n.isChanged && !n.isFile) {
+        n.layer = 1;
+      } else if (n.isFile) {
+        n.layer = 0;
+      } else {
+        n.layer = 2;
+      }
+      layers[n.layer].push(n);
+    });
+
+    let activeLayerIndices = [0, 1, 2, 3];
+    if (layers[1].length === 0 && layers[2].length === 0 && layers[3].length === 0) {
+      // File-only mode (e.g. non-Python repos where AST sub-entities were skipped)
+      if (layers[0].length > 4) {
+        const half = Math.ceil(layers[0].length / 2);
+        layers[1] = layers[0].slice(half);
+        layers[0] = layers[0].slice(0, half);
+        layers[1].forEach(n => n.layer = 1);
+        activeLayerIndices = [0, 1];
+      } else {
+        activeLayerIndices = [0];
+      }
+    } else if (layers[2].length === 0) {
+      layers[2] = layers[3];
+      layers[3] = [];
+      layers[2].forEach(n => n.layer = 2);
+      activeLayerIndices = [0, 1, 2];
+    }
+
+    layers.forEach(col => {
+      col.sort((a, b) => {
+        if (a.isImpacted && !b.isImpacted) return -1;
+        if (!a.isImpacted && b.isImpacted) return 1;
+        if (a.isChanged && !b.isChanged) return -1;
+        if (!a.isChanged && b.isChanged) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+    const startX = 40;
+    const colStep = 330;
+    const nodeWidth = 240;
+    const nodeHeight = 56;
+    const rowStep = 80;
+
+    let maxRows = 1;
+    layers.forEach((col, cIdx) => {
+      maxRows = Math.max(maxRows, col.length);
+      col.forEach((n, rIdx) => {
+        n.x = startX + cIdx * colStep;
+        n.y = 55 + rIdx * rowStep;
+      });
+    });
+
+    const totalWidth = Math.max(1150, startX + activeLayerIndices.length * colStep + 60);
+    const totalHeight = Math.max(500, 55 + maxRows * rowStep + 60);
+
+    const visibleEdges = (cg.edges || []).filter(e => visibleNodeMap.has(e.source) && visibleNodeMap.has(e.target));
+
+    let bannerHtml = '';
+    if (edgesList.length === 0) {
+      bannerHtml = `
+        <div style="background: #f8fafc; border: 1px solid var(--border-strong); border-left: 4px solid var(--brand-primary); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.5;">
+          <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; color: var(--text-primary);">
+            <span>ℹ️</span> <span>Self-Contained / Standalone Modifications</span>
+          </div>
+          No cross-file AST dependency edges were resolved between the modified entities in this pull request. The <strong>${visibleNodes.length} modified code and file nodes</strong> are mapped below.
+        </div>
+      `;
+    }
+
+    let svgHtml = `
+      <svg id="dependency-graph-svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" style="display: block; font-family: var(--font-sans);">
+        <defs>
+          <filter id="shadow-impact" x="-10%" y="-10%" width="130%" height="130%">
+            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#f59e0b" flood-opacity="0.35"/>
+          </filter>
+          <filter id="shadow-node" x="-10%" y="-10%" width="120%" height="120%">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000000" flood-opacity="0.08"/>
+          </filter>
+          <marker id="arrow-calls" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563eb" />
+          </marker>
+          <marker id="arrow-imports" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#7c3aed" />
+          </marker>
+          <marker id="arrow-contains" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8" />
+          </marker>
+          <marker id="arrow-inherits" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#059669" />
+          </marker>
+          <marker id="arrow-tests" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706" />
+          </marker>
+        </defs>
+
+        <!-- Column Header Labels -->
+        <g opacity="0.75">
+          ${edgesList.length === 0 ? `
+            <text x="${startX + 10}" y="30" font-size="12" font-weight="700" fill="#64748b" text-transform="uppercase" letter-spacing="0.5">Modified Files</text>
+            ${activeLayerIndices.length > 1 ? `<text x="${startX + colStep + 10}" y="30" font-size="12" font-weight="700" fill="#64748b" text-transform="uppercase" letter-spacing="0.5">Modified Files (Cont.)</text>` : ''}
+          ` : `
+            <text x="${startX + 10}" y="30" font-size="12" font-weight="700" fill="#64748b" text-transform="uppercase" letter-spacing="0.5">1. Source & Files</text>
+            <text x="${startX + colStep + 10}" y="30" font-size="12" font-weight="700" fill="#2563eb" text-transform="uppercase" letter-spacing="0.5">2. Changed Code</text>
+            ${activeLayerIndices.length === 4 ? `
+              <text x="${startX + colStep * 2 + 10}" y="30" font-size="12" font-weight="700" fill="#64748b" text-transform="uppercase" letter-spacing="0.5">3. Intermediate Callers</text>
+              <text x="${startX + colStep * 3 + 10}" y="30" font-size="12" font-weight="700" fill="#d97706" text-transform="uppercase" letter-spacing="0.5">4. Impacted Consumers</text>
+            ` : `
+              <text x="${startX + colStep * 2 + 10}" y="30" font-size="12" font-weight="700" fill="#d97706" text-transform="uppercase" letter-spacing="0.5">3. Impacted Consumers & Tests</text>
+            `}
+          `}
+        </g>
+
+        <!-- Directed Edges -->
+        <g id="svg-edges-group">
+    `;
+
+    visibleEdges.forEach(e => {
+      const s = visibleNodeMap.get(e.source);
+      const t = visibleNodeMap.get(e.target);
+      if (!s || !t) return;
+
+      const p1 = { x: s.x + nodeWidth, y: s.y + nodeHeight / 2 };
+      const p2 = { x: t.x, y: t.y + nodeHeight / 2 };
+
+      let edgeColor = '#94a3b8';
+      let markerId = 'arrow-contains';
+      let strokeDash = '';
+      if (e.edge_type === 'CALLS') {
+        edgeColor = '#2563eb';
+        markerId = 'arrow-calls';
+      } else if (e.edge_type === 'IMPORTS') {
+        edgeColor = '#7c3aed';
+        markerId = 'arrow-imports';
+        strokeDash = 'stroke-dasharray="4,3"';
+      } else if (e.edge_type === 'CONTAINS') {
+        edgeColor = '#94a3b8';
+        markerId = 'arrow-contains';
+        strokeDash = 'stroke-dasharray="2,3"';
+      } else if (e.edge_type === 'INHERITS') {
+        edgeColor = '#059669';
+        markerId = 'arrow-inherits';
+      } else if (e.edge_type === 'TESTS') {
+        edgeColor = '#d97706';
+        markerId = 'arrow-tests';
+      }
+
+      let d = '';
+      if (p2.x > p1.x) {
+        const dx = p2.x - p1.x;
+        const cx1 = p1.x + dx * 0.45;
+        const cx2 = p2.x - dx * 0.45;
+        d = `M ${p1.x} ${p1.y} C ${cx1} ${p1.y}, ${cx2} ${p2.y}, ${p2.x} ${p2.y}`;
+      } else {
+        const arcY = Math.min(p1.y, p2.y) - 35;
+        d = `M ${p1.x} ${p1.y} C ${p1.x + 30} ${arcY}, ${p2.x - 30} ${arcY}, ${p2.x} ${p2.y}`;
+      }
+
+      svgHtml += `
+        <path class="graph-edge-path" data-source="${escapeHtml(e.source)}" data-target="${escapeHtml(e.target)}" d="${d}" fill="none" stroke="${edgeColor}" stroke-width="1.8" ${strokeDash} marker-end="url(#${markerId})" opacity="0.75">
+          <title>${escapeHtml(e.source)} --[${e.edge_type}]--> ${escapeHtml(e.target)} (${e.certainty})</title>
+        </path>
+      `;
+    });
+
+    svgHtml += `</g><g id="svg-nodes-group">`;
+
+    // Render Nodes
+    visibleNodes.forEach(n => {
+      const isSelected = selectedGraphNodeId === n.id;
+      let bgFill = '#ffffff';
+      let strokeColor = '#e2e8f0';
+      let strokeWidth = 1.5;
+      let filterAttr = 'filter="url(#shadow-node)"';
+      let badgeBg = '#f1f5f9';
+      let badgeColor = '#475569';
+      let badgeLabel = 'CODE';
+      let icon = '⚙️';
+
+      if (n.isImpacted) {
+        bgFill = '#fffbeb';
+        strokeColor = '#f59e0b';
+        strokeWidth = isSelected ? 3.5 : 2.5;
+        filterAttr = 'filter="url(#shadow-impact)"';
+        badgeBg = '#fef3c7';
+        badgeColor = '#92400e';
+        badgeLabel = '⚡ IMPACTED';
+        icon = '⚡';
+      } else if (n.isChanged) {
+        bgFill = '#eff6ff';
+        strokeColor = '#2563eb';
+        strokeWidth = isSelected ? 3 : 2;
+        badgeBg = '#dbeafe';
+        badgeColor = '#1e40af';
+        badgeLabel = '✏️ CHANGED';
+        icon = '✏️';
+      } else if (n.isFile) {
+        bgFill = '#ffffff';
+        strokeColor = '#cbd5e1';
+        badgeBg = '#f8fafc';
+        badgeColor = '#64748b';
+        badgeLabel = '📄 FILE';
+        icon = '📄';
+      }
+
+      if (isSelected) {
+        strokeColor = '#1d4ed8';
+        strokeWidth = 3;
+      }
+
+      let displayName = n.name;
+      if (displayName.length > 22) displayName = displayName.substring(0, 20) + '…';
+
+      let displayFile = n.filePath;
+      if (displayFile.length > 28) displayFile = '…' + displayFile.substring(displayFile.length - 26);
+
+      svgHtml += `
+        <g class="graph-node-g" data-node-id="${escapeHtml(n.id)}" transform="translate(${n.x}, ${n.y})" onmouseenter="highlightGraphNode('${escapeHtml(n.id)}')" onmouseleave="unhighlightGraphNode()" onclick="selectGraphNode('${escapeHtml(n.id)}')">
+          <rect width="${nodeWidth}" height="${nodeHeight}" rx="8" fill="${bgFill}" stroke="${strokeColor}" stroke-width="${strokeWidth}" ${filterAttr} />
+          
+          <!-- Badge Pill -->
+          <rect x="${nodeWidth - 85}" y="8" width="75" height="18" rx="4" fill="${badgeBg}" stroke="${strokeColor}" stroke-width="0.5" />
+          <text x="${nodeWidth - 47}" y="20.5" font-size="9.5" font-weight="700" fill="${badgeColor}" text-anchor="middle">${badgeLabel}</text>
+          
+          <!-- Icon & Name -->
+          <text x="12" y="24" font-size="14">${icon}</text>
+          <text x="32" y="23" font-size="12.5" font-weight="${n.isImpacted || n.isChanged ? '700' : '600'}" fill="${n.isImpacted ? '#78350f' : (n.isChanged ? '#1e3a8a' : '#0f172a')}">
+            ${escapeHtml(displayName)}
+            <title>${escapeHtml(n.id)}</title>
+          </text>
+          
+          <!-- File Subtitle -->
+          <text x="32" y="42" font-size="11" fill="#64748b">
+            ${escapeHtml(displayFile || n.id)}
+          </text>
+        </g>
+      `;
+    });
+
+    svgHtml += `</g></svg>`;
+    return bannerHtml + svgHtml;
+  }
+
+  function buildNodeInspectorCard(cg, selectedNodeId) {
+    if (!selectedNodeId) return '';
+    const impactedList = cg.impacted_entities || [];
+    const changedList = cg.changed_entities || [];
+    const impObj = impactedList.find(ie => ie.node_id === selectedNodeId);
+    const isChanged = changedList.some(ce => ce === selectedNodeId || `entity:${ce}` === selectedNodeId || `file:${ce}` === selectedNodeId);
+    const isImpacted = !!impObj;
+
+    const incoming = (cg.edges || []).filter(e => e.target === selectedNodeId);
+    const outgoing = (cg.edges || []).filter(e => e.source === selectedNodeId);
+
+    return `
+      <div class="graph-node-inspector" style="margin-top: 14px; position: relative;">
+        <button onclick="selectGraphNode(null)" style="position: absolute; right: 12px; top: 12px; border: none; background: transparent; cursor: pointer; font-size: 18px; color: var(--text-muted);">&times;</button>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+          <span style="font-size: 16px;">${isImpacted ? '⚡' : (isChanged ? '✏️' : '📄')}</span>
+          <b style="font-size: 14px; color: var(--text-primary); font-family: var(--font-mono);">${escapeHtml(selectedNodeId)}</b>
+          <span class="badge ${isImpacted ? 'badge-high' : (isChanged ? 'badge-explained' : 'badge-neutral')}">${isImpacted ? 'DOWNSTREAM IMPACTED' : (isChanged ? 'DIRECTLY CHANGED' : 'CONTAINER FILE')}</span>
+        </div>
+
+        ${isImpacted && impObj ? `
+          <div style="background: var(--warning-bg); border-left: 3px solid var(--warning-text); padding: 8px 12px; border-radius: 4px; font-size: 12px; color: var(--warning-text); margin-bottom: 10px;">
+            <b>Impact Propagation:</b> ${impObj.min_distance} hop(s) downstream from modified code.
+            ${impObj.impact_paths && impObj.impact_paths[0] ? `<div style="font-family: var(--font-mono); margin-top: 4px;"><b>Propagation Path:</b> ${escapeHtml(impObj.impact_paths[0].path_description)}</div>` : ''}
+            ${impObj.impact_paths && impObj.impact_paths[0] && impObj.impact_paths[0].impact_reason ? `<div style="margin-top: 4px;"><b>Impact Rationale:</b> ${escapeHtml(impObj.impact_paths[0].impact_reason)}</div>` : ''}
+          </div>
+        ` : ''}
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; font-size: 12px;">
+          <div>
+            <b>Incoming Relationships (${incoming.length}):</b>
+            <ul style="margin-left: 18px; margin-top: 4px; color: var(--text-secondary);">
+              ${incoming.map(e => `<li><code>${escapeHtml(e.source)}</code> ➔ <b>${e.edge_type}</b></li>`).join('') || '<li>None</li>'}
+            </ul>
+          </div>
+          <div>
+            <b>Outgoing Relationships (${outgoing.length}):</b>
+            <ul style="margin-left: 18px; margin-top: 4px; color: var(--text-secondary);">
+              ${outgoing.map(e => `<li><b>${e.edge_type}</b> ➔ <code>${escapeHtml(e.target)}</code></li>`).join('') || '<li>None</li>'}
+            </ul>
+          </div>
+        </div>
+      </div>
     `;
   }
 
-  function renderRiskTab(r) {
+  function setGraphFilter(scope) {
+    graphFilterScope = scope;
+    if (activeReport) renderGraphDetails(activeReport);
+  }
+
+  function setGraphSearch(q) {
+    graphSearchQuery = q.toLowerCase();
+    if (activeReport) renderGraphDetails(activeReport);
+  }
+
+  function renderRiskDetails(r) {
     const ra = r.risk_assessment;
     if (!ra) {
-      document.getElementById('tab-content-risk').innerHTML = '<p class="empty-state">No risk assessment available.</p>';
+      document.getElementById('hdr-risk-summary').innerText = '(Not available)';
+      document.getElementById('risk-content-container').innerHTML = '<p class="empty-state">No risk assessment available.</p>';
       return;
     }
 
-    const riskBadge = ra.overall_risk_level === 'HIGH' ? 'badge-high' : (ra.overall_risk_level === 'MEDIUM' ? 'badge-medium' : 'badge-low');
+    document.getElementById('hdr-risk-summary').innerText = `(Risk Level: ${ra.overall_risk_level}, Score: ${ra.overall_risk_score})`;
+
     let factorsHtml = '';
-    if (ra.risk_factors) {
-      factorsHtml = ra.risk_factors.map(f => `
-        <div class="stat-box" style="margin-bottom: 8px;">
-          <div style="display:flex; justify-content:space-between;">
-            <b>${f.name}</b>
-            <span class="badge ${f.level === 'HIGH' ? 'badge-high' : (f.level === 'MEDIUM' ? 'badge-medium' : 'badge-low')}">${f.level}</span>
+    if (ra.risk_factors && ra.risk_factors.length > 0) {
+      factorsHtml = ra.risk_factors.map(f => {
+        let factorBadge = 'badge-low';
+        if (f.level === 'HIGH') factorBadge = 'badge-high';
+        else if (f.level === 'MEDIUM') factorBadge = 'badge-medium';
+
+        return `
+          <div class="risk-factor-box">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <b>${escapeHtml(f.name)}</b>
+              <span class="badge ${factorBadge}">${f.level}</span>
+            </div>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${escapeHtml(f.description)}</p>
+            ${f.evidence && f.evidence.length > 0 ? `
+              <ul style="margin-left: 18px; font-size: 11px; color: var(--brand-text); margin-top: 6px;">
+                ${f.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
+              </ul>
+            ` : ''}
           </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${escapeHtml(f.description)}</p>
-          ${f.evidence ? `<ul style="margin-left: 18px; font-size: 11px; color: var(--accent); margin-top: 4px;">${f.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}</ul>` : ''}
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    document.getElementById('tab-content-risk').innerHTML = `
-      <div class="notice">
-        <b>Overall PR Risk:</b> <span class="badge ${riskBadge}">${ra.overall_risk_level}</span> (Score: <b>${ra.overall_risk_score}</b>)<br>
-        <p style="margin-top: 6px;">${escapeHtml(ra.summary || '')}</p>
+    document.getElementById('risk-content-container').innerHTML = `
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 14px; font-weight: 600;">Overall Risk Assessment: <b>${ra.overall_risk_level}</b></span>
+          <span class="code-tag">Risk Score: ${ra.overall_risk_score}</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">${escapeHtml(ra.summary || '')}</p>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
+          <b>Design Note:</b> Semantic divergence or low text similarity indicates scope or intent mismatch; it is evaluated as an alignment signal rather than a calibrated security defect probability.
+        </p>
       </div>
-      <h3 style="font-size: 14px; margin-bottom: 10px;">Multi-Factor Risk Breakdown:</h3>
-      ${factorsHtml}
+
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+        Evidence-Based Risk Factors:
+      </h4>
+      ${factorsHtml || '<p class="empty-state">No individual risk factors identified.</p>'}
     `;
   }
 
-  function renderTestsTab(r) {
+  function renderTestsDetails(r) {
     const ts = r.test_selection;
     if (!ts) {
-      document.getElementById('tab-content-tests').innerHTML = '<p class="empty-state">No regression test selection performed.</p>';
+      document.getElementById('hdr-tests-summary').innerText = '(Not available)';
+      document.getElementById('tests-content-container').innerHTML = '<p class="empty-state">No regression test selection performed.</p>';
       return;
     }
+
+    const count = ts.recommended_tests ? ts.recommended_tests.length : 0;
+    document.getElementById('hdr-tests-summary').innerText = `(${count} recommended: ${ts.critical_count || 0} critical, ${ts.high_count || 0} high)`;
 
     let testsHtml = '';
     if (ts.recommended_tests && ts.recommended_tests.length > 0) {
-      testsHtml = ts.recommended_tests.map(t => `
-        <div class="hunk-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span class="code-tag" style="font-size: 12px; font-weight:600;">${escapeHtml(t.test_file)} :: ${escapeHtml(t.test_name)}</span>
-            <span class="badge ${t.priority === 'P0_CRITICAL' ? 'badge-high' : (t.priority === 'P1_HIGH' ? 'badge-medium' : 'badge-completed')}">${t.priority}</span>
+      testsHtml = ts.recommended_tests.map((t, idx) => {
+        let pBadge = 'badge-completed';
+        if (t.priority === 'P0_CRITICAL') pBadge = 'badge-high';
+        else if (t.priority === 'P1_HIGH') pBadge = 'badge-medium';
+
+        const cmdId = `cmd-text-${idx}`;
+
+        return `
+          <div class="test-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span class="code-tag" style="font-size: 12px; font-weight: 600;">${escapeHtml(t.test_file)} :: ${escapeHtml(t.test_name)}</span>
+              <span class="badge ${pBadge}">${t.priority}</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">
+              <b>Match Technique:</b> <code>${escapeHtml(t.match_type)}</code> (Relationship Confidence: ${t.relationship_confidence})
+            </div>
+            ${t.evidence && t.evidence.length > 0 ? `
+              <ul style="margin-left: 18px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                ${t.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}
+              </ul>
+            ` : ''}
+            <div class="command-box">
+              <span id="${cmdId}">$ ${escapeHtml(t.suggested_command || `pytest ${t.test_file} -k ${t.test_name}`)}</span>
+              <button class="copy-cmd-btn" onclick="copyCommand('${cmdId}')">Copy</button>
+            </div>
           </div>
-          <div style="font-size: 12px; margin-bottom: 6px;"><b>Match Technique:</b> <code>${t.match_type}</code> (Confidence: ${t.relationship_confidence})</div>
-          ${t.evidence ? `<ul style="margin-left: 18px; font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">${t.evidence.map(ev => `<li>${escapeHtml(ev)}</li>`).join('')}</ul>` : ''}
-          <div style="background: #010409; padding: 6px 10px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--accent);">
-            $ ${escapeHtml(t.suggested_command)}
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } else {
-      testsHtml = '<p class="empty-state">No relevant tests mapped to changed components.</p>';
+      testsHtml = '<p class="empty-state">No existing regression tests directly mapped to the modified components.</p>';
     }
 
-    document.getElementById('tab-content-tests').innerHTML = `
-      <div class="notice">
-        <b>Regression Test Selection Strategy:</b> ${escapeHtml(ts.selection_strategy)}<br>
-        <div style="display: flex; gap: 10px; margin-top: 8px;">
-          <span>Critical: <b>${ts.critical_count}</b></span>
-          <span>High: <b>${ts.high_count}</b></span>
-          <span>Medium: <b>${ts.medium_count}</b></span>
-          <span>Low: <b>${ts.low_count}</b></span>
+    document.getElementById('tests-content-container').innerHTML = `
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); padding: 12px 14px; border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <b>Selection Strategy:</b> ${escapeHtml(ts.selection_strategy || 'Static AST & Import Linkage')}
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+              Status: <b>Recommended (not yet executed in this pipeline)</b>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <span class="badge badge-high">Critical: ${ts.critical_count || 0}</span>
+            <span class="badge badge-medium">High: ${ts.high_count || 0}</span>
+            <span class="badge badge-neutral">Medium: ${ts.medium_count || 0}</span>
+            <span class="badge badge-neutral">Low: ${ts.low_count || 0}</span>
+          </div>
         </div>
       </div>
-      <h3 style="font-size: 14px; margin-bottom: 12px;">Recommended Regression Tests:</h3>
+
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+        Prioritized Test Recommendations:
+      </h4>
       ${testsHtml}
     `;
   }
 
-  function renderLimitationsTab(r) {
+  function copyCommand(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = el.innerText.replace(/^\$\s*/, '');
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Command copied to clipboard: " + text);
+    });
+  }
+
+  function renderLimitationsDetails(r) {
     const lims = r.processing_limitations || [];
-    document.getElementById('tab-content-limitations').innerHTML = `
-      <h3 style="font-size: 14px; margin-bottom: 12px;">Analysis Limitations & Boundaries:</h3>
-      <ul style="margin-left: 20px; font-size: 13px; color: var(--text-muted); line-height: 1.8;">
-        ${lims.map(l => `<li>${escapeHtml(l)}</li>`).join('')}
+
+    document.getElementById('limitations-content-container').innerHTML = `
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); padding: 14px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+        <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 8px;">AI & Fallback Provider Diagnostics:</h4>
+        <div style="font-size: 12px; line-height: 1.6; color: var(--text-secondary);">
+          <div><b>Active Provider:</b> <code>${escapeHtml(r.ai_provider || 'tfidf')}</code></div>
+          <div><b>Active Model:</b> <code>${escapeHtml(r.ai_model || 'tfidf-fallback')}</code></div>
+          <div><b>Deterministic Fallback:</b> Enabled & available across all analysis routes.</div>
+        </div>
+      </div>
+
+      <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-secondary);">
+        Analysis Boundaries & Processing Limitations:
+      </h4>
+      <ul style="margin-left: 20px; font-size: 12px; color: var(--text-muted); line-height: 1.8;">
+        ${lims.map(l => `<li>${escapeHtml(l)}</li>`).join('') || '<li>No specific limitations recorded.</li>'}
       </ul>
     `;
+  }
+
+  /* ============================================================
+     EXPAND / COLLAPSE CONTROLS
+     ============================================================ */
+  function toggleSection(secId) {
+    const sec = document.getElementById(secId);
+    if (sec) sec.classList.toggle('expanded');
+  }
+
+  function openAndScrollToSection(secId) {
+    const sec = document.getElementById(secId);
+    if (sec) {
+      sec.classList.add('expanded');
+      sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function expandAllSections() {
+    ['section-intent', 'section-graph', 'section-tests', 'section-limitations'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('expanded');
+    });
+    document.querySelectorAll('.hunk-tech-details').forEach(el => {
+      el.style.display = 'block';
+    });
+    document.querySelectorAll('.hunk-tech-toggle-btn').forEach(btn => {
+      btn.innerHTML = '<span>ℹ️ Hide additional information</span> ▲';
+    });
+  }
+
+  function collapseAllSections() {
+    ['section-intent', 'section-graph', 'section-tests', 'section-limitations'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('expanded');
+    });
+    document.querySelectorAll('.hunk-tech-details').forEach(el => {
+      el.style.display = 'none';
+    });
+    document.querySelectorAll('.hunk-tech-toggle-btn').forEach(btn => {
+      btn.innerHTML = '<span>ℹ️ Show more information</span> ▼';
+    });
   }
 
   async function postGitHubComment() {
